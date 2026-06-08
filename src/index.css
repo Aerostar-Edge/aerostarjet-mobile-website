@@ -1,0 +1,82 @@
+@import "tailwindcss";
+
+@source "./**/*.{ts,tsx}";
+@source "../index.html";
+
+@theme {
+  --font-sans: "Poppins", ui-sans-serif, system-ui, sans-serif;
+  --color-surface: #fffffb;
+  --color-navy: #0a0f2c;
+  --color-navy-deep: #0b1130;
+  --color-primary: #2b45f0;
+  --color-primary-alt: #2b3eff;
+  --color-accent: #ffc629;
+  --color-accent-bright: #ffd600;
+  --color-accent-dark: #190b5e;
+  --color-accent-gold: #ffcc00;
+  --color-muted: #5a6385;
+  --color-muted-alt: #7a7a8c;
+  --color-body: #3d3d3d;
+  --color-border: #e6e9f5;
+  --color-border-alt: #e6e7ef;
+  --color-bg-light: #f4f6ff;
+  --color-bg-grey: #f5f6fa;
+  --color-bg-image: #eaefff;
+  --color-bg-avatar: #eceeff;
+  --color-placeholder: #757575;
+  --color-quote: #e0e4ff;
+  --text-hero: 2rem;
+  --text-hero--line-height: 2.25rem;
+  --text-heading-lg: 1.75rem;
+  --text-heading-lg--line-height: 2rem;
+  --text-heading-md: 1rem;
+  --text-heading-md--line-height: 1.5rem;
+  --text-label: 0.75rem;
+  --text-label--line-height: 1rem;
+  --text-overline: 0.75rem;
+  --text-overline--line-height: 1rem;
+  --text-body-sm: 0.75rem;
+  --text-body-sm--line-height: 1rem;
+  --color-muted-light: #9097b4;
+}
+
+@layer base {
+  html { @apply scroll-smooth antialiased overflow-x-hidden; }
+  body { @apply m-0 min-h-dvh overflow-x-hidden bg-surface font-sans text-body; }
+  #root { @apply min-h-dvh; }
+}
+
+@layer utilities {
+  .text-description {
+    @apply text-xs leading-relaxed;
+  }
+  .snap-x-mandatory { scroll-snap-type: x mandatory; }
+  .snap-start-child > * { scroll-snap-align: start; }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .swipe-track {
+    scroll-snap-type: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .swipe-track[data-dragging='true'] {
+    cursor: grabbing;
+  }
+  .animate-partner-marquee {
+    animation: partner-marquee 28s linear infinite;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .animate-partner-marquee {
+      animation: none;
+    }
+  }
+}
+
+@keyframes partner-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
