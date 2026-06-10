@@ -1,32 +1,23 @@
-import { Link } from 'react-router-dom'
 import PageLayout from '../components/layout/PageLayout'
-import SectionLabel from '../components/ui/SectionLabel'
-import { blogPosts } from '../data/content'
+import BlogCard from '../components/ui/BlogCard'
+import { blogsCopy, getBlogListingPosts } from '../data/content'
 
 export default function BlogsPage() {
+  const posts = getBlogListingPosts()
+
   return (
     <PageLayout>
-      <section className="space-y-6 px-4 py-10">
-        <SectionLabel>Blogs</SectionLabel>
-        <h1 className="text-heading-lg font-extrabold text-navy">Aviation career insights</h1>
-        <ul className="space-y-6">
-          {blogPosts.map((post) => (
-            <li key={post.id} className="overflow-hidden rounded-2xl border border-border">
-              <div className="h-44 w-full bg-bg-image" />
-              <div className="space-y-3 p-5">
-                <p className="text-xs font-semibold uppercase text-muted">{post.date}</p>
-                <h2 className="text-heading-md font-bold text-navy">{post.title}</h2>
-                <p className="text-description leading-6 text-body">{post.excerpt}</p>
-                <Link
-                  to={`/article/${post.id}`}
-                  className="inline-flex min-h-12 items-center text-xs font-bold text-primary"
-                >
-                  Read article
-                </Link>
-              </div>
-            </li>
+      <section className="space-y-2 bg-primary-alt px-4 py-8 text-surface">
+        <h1 className="text-[1.75rem] font-bold">{blogsCopy.heading}</h1>
+        <p className="text-description text-white/85">{blogsCopy.subheading}</p>
+      </section>
+
+      <section className="mobile-listing-section py-8">
+        <div className="blog-cards-grid mb-0">
+          {posts.map((post, index) => (
+            <BlogCard key={post.slug} post={post} index={index} />
           ))}
-        </ul>
+        </div>
       </section>
     </PageLayout>
   )

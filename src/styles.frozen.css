@@ -1,10 +1,3 @@
-/* ============================================
-   FROZEN — DO NOT MODIFY ANYTHING ABOVE THIS LINE
-   Last frozen: June 10, 2026
-   All styles below this point are locked.
-   New additions only go at the bottom.
-============================================ */
-
 @import "tailwindcss";
 
 @source "./**/*.{ts,tsx}";

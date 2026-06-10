@@ -1,6 +1,7 @@
-import { Link, useNavigate } from 'react-router-dom'
+import usePreviewNavigate from '../../hooks/usePreviewNavigate'
 import { CloseIcon } from '../ui/NavIcons'
 import { navLinks } from '../../data/content'
+import PreviewLink from './PreviewLink'
 
 type MobileNavDrawerProps = {
   open: boolean
@@ -8,24 +9,24 @@ type MobileNavDrawerProps = {
 }
 
 export default function MobileNavDrawer({ open, onClose }: MobileNavDrawerProps) {
-  const navigate = useNavigate()
+  const previewNavigate = usePreviewNavigate()
 
   if (!open) return null
 
   const goHome = () => {
     onClose()
-    navigate('/')
+    previewNavigate('/')
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   return (
     <>
       <div
-        className="fixed inset-0 z-40 bg-navy/60 backdrop-blur-sm"
+        className="mobile-nav-backdrop fixed inset-0 z-[65] bg-navy/60 backdrop-blur-sm"
         onClick={onClose}
         aria-hidden
       />
-      <nav className="fixed right-0 top-0 z-50 flex h-full w-[min(320px,85vw)] flex-col bg-surface shadow-2xl">
+      <nav className="mobile-nav-drawer fixed right-0 top-0 z-[70] flex h-full w-[min(320px,85vw)] flex-col bg-surface shadow-2xl">
         <div className="flex min-h-12 items-center justify-between border-b border-border px-4">
           <span className="text-body-sm font-semibold text-navy">Menu</span>
           <button
@@ -38,41 +39,43 @@ export default function MobileNavDrawer({ open, onClose }: MobileNavDrawerProps)
           </button>
         </div>
         <div className="flex flex-1 flex-col py-2">
-          {navLinks
-            .filter((link) => link.label !== 'FAQ')
-            .map((link) =>
-            link.href === '/' ? (
-              <Link
-                key={link.label}
-                to="/"
-                onClick={(event) => {
-                  event.preventDefault()
-                  goHome()
-                }}
-                className="flex min-h-12 items-center px-6 text-body font-medium text-navy hover:bg-bg-light"
-              >
-                {link.label}
-              </Link>
-            ) : (
-              <Link
+          {navLinks.map((link) => {
+            if (link.href === '/') {
+              return (
+                <PreviewLink
+                  key={link.label}
+                  to="/"
+                  onClick={(event) => {
+                    event.preventDefault()
+                    goHome()
+                  }}
+                  className="flex min-h-12 items-center px-6 text-body font-medium text-navy hover:bg-bg-light"
+                >
+                  {link.label}
+                </PreviewLink>
+              )
+            }
+
+            return (
+              <PreviewLink
                 key={link.label}
                 to={link.href}
                 onClick={onClose}
                 className="flex min-h-12 items-center px-6 text-body font-medium text-navy hover:bg-bg-light"
               >
                 {link.label}
-              </Link>
-            ),
-          )}
+              </PreviewLink>
+            )
+          })}
         </div>
         <div className="p-4">
-          <Link
+          <PreviewLink
             to="/apply"
             onClick={onClose}
-            className="flex h-10 w-full items-center justify-center whitespace-nowrap rounded-full bg-accent-bright text-xs font-extrabold uppercase leading-none tracking-wide text-accent-dark"
+            className="flex w-full items-center justify-center whitespace-nowrap rounded-full bg-accent-bright px-4 py-2 text-xs font-extrabold uppercase leading-none tracking-wide text-accent-dark"
           >
             Enroll Now
-          </Link>
+          </PreviewLink>
         </div>
       </nav>
     </>

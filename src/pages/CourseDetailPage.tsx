@@ -1,7 +1,10 @@
 import { Link, Navigate, useParams } from 'react-router-dom'
 import PageLayout from '../components/layout/PageLayout'
 import CtaBanner from '../components/sections/CtaBanner'
-import { curriculumModules, getCourseById } from '../data/content'
+import CurriculumAccordion from '../components/ui/CurriculumAccordion'
+import GroundSubjectsAccordion from '../components/ui/GroundSubjectsAccordion'
+import { getModuleGroupsForCourse } from '../data/courseModuleGroups'
+import { getCourseById } from '../data/content'
 
 export default function CourseDetailPage() {
   const { courseId } = useParams()
@@ -10,6 +13,8 @@ export default function CourseDetailPage() {
   if (!course) {
     return <Navigate to="/courses" replace />
   }
+
+  const moduleGroups = getModuleGroupsForCourse(course.id)
 
   return (
     <PageLayout>
@@ -23,7 +28,7 @@ export default function CourseDetailPage() {
             Courses
           </Link>
           <span>/</span>
-          <span>{course.code}</span>
+          <span>{course.code ?? course.title}</span>
         </nav>
         <span className="inline-block rounded bg-accent-gold px-3 py-2 text-label font-semibold uppercase tracking-wide text-navy">
           {course.programmeLabel}
@@ -34,38 +39,60 @@ export default function CourseDetailPage() {
 
       <section className="space-y-6 px-4 py-8">
         <img src={course.image} alt={course.title} className="h-52 w-full rounded-2xl object-cover" />
-        <h2 className="text-heading-md font-bold text-navy">{course.tagline}</h2>
-        <p className="text-description leading-6 text-body">{course.description}</p>
-        <h3 className="text-heading-md font-bold text-navy">Curriculum & Modules</h3>
-        <div className="space-y-3">
-          {curriculumModules.map((module) => (
-            <div key={module} className="flex min-h-12 items-center gap-3 rounded-lg bg-bg-grey px-4">
-              <span className="font-bold text-primary">✓</span>
-              <span className="text-xs text-navy">{module}</span>
-            </div>
-          ))}
-        </div>
-        <div className="space-y-4 rounded-lg border border-border-alt bg-surface p-6 shadow-md">
-          <h3 className="text-heading-md font-bold text-navy">Programme Details</h3>
+
+        <div className="space-y-2 rounded-lg border border-border-alt bg-surface p-4 shadow-md">
+          <h3 className="text-sm font-bold text-navy">Programme Details</h3>
           {[
-            ['Course Code', course.code],
+            ...(course.code ? [['Course Code', course.code] as const] : []),
             ['Duration', course.duration],
             ['Schedule', course.schedule],
-            ['Admission', 'Open 2025/26'],
+            ['Admission', 'Open 2026/27'],
             ['Fees Structure', 'Contact Now'],
           ].map(([label, value]) => (
-            <div key={label} className="flex min-h-12 items-center justify-between border-b border-border-alt pb-3">
-              <span className="text-body-sm text-muted">{label}</span>
-              <span className="text-xs font-bold text-navy">{value}</span>
+            <div
+              key={label}
+              className="flex items-center justify-between gap-2 border-b border-border-alt py-2 last:border-b-0"
+            >
+              <span className="shrink-0 text-[11px] text-muted">{label}</span>
+              <span className="max-w-[58%] text-right text-[11px] font-semibold leading-snug text-navy">
+                {value}
+              </span>
             </div>
           ))}
           <Link
             to="/apply"
-            className="flex min-h-12 w-full items-center justify-center rounded-full bg-accent-bright text-xs font-bold text-accent-dark"
+            className="mt-1 flex min-h-10 w-full items-center justify-center rounded-full bg-accent-bright text-xs font-bold text-accent-dark"
           >
-            Enroll Now →
+            Enroll Now &rarr;
           </Link>
         </div>
+
+        <h2 className="text-heading-md font-bold text-navy">{course.tagline}</h2>
+        <p className="text-description leading-6 text-body">{course.overview}</p>
+        {course.eligibility ? (
+          <>
+            <h3 className="text-heading-md font-bold text-navy">Eligibility</h3>
+            <p className="text-description leading-6 text-body">{course.eligibility}</p>
+          </>
+        ) : null}
+        {course.flightTraining ? (
+          <>
+            <h3 className="text-heading-md font-bold text-navy">Flight Training</h3>
+            <p className="text-description leading-6 text-body">{course.flightTraining}</p>
+          </>
+        ) : null}
+        {course.groundSubjects && course.groundSubjects.length > 0 ? (
+          <>
+            <h3 className="text-heading-md font-bold text-navy">Ground Subjects (DGCA Examinations)</h3>
+            <GroundSubjectsAccordion subjects={course.groundSubjects} />
+          </>
+        ) : null}
+        {moduleGroups.length > 0 ? (
+          <>
+            <h3 className="text-heading-md font-bold text-navy">Curriculum & Modules</h3>
+            <CurriculumAccordion groups={moduleGroups} />
+          </>
+        ) : null}
       </section>
       <CtaBanner />
     </PageLayout>

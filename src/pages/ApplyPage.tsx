@@ -1,3 +1,4 @@
+import FormSelect from '../components/ui/FormSelect'
 import PageLayout from '../components/layout/PageLayout'
 import SectionLabel from '../components/ui/SectionLabel'
 import { courses } from '../data/content'
@@ -43,13 +44,13 @@ export default function ApplyPage() {
           </label>
           <label className="block space-y-2">
             <span className="text-xs font-semibold text-navy">Preferred course</span>
-            <select className="min-h-12 w-full rounded-xl border border-border-alt px-4 text-xs outline-none focus:border-primary">
-              {courses.map((course) => (
-                <option key={course.id} value={course.id}>
-                  {course.title}
-                </option>
-              ))}
-            </select>
+            <FormSelect
+              defaultValue={courses[0]?.id ?? ''}
+              options={courses.map((course) => ({
+                value: course.id,
+                label: course.title,
+              }))}
+            />
           </label>
           <label className="block space-y-2">
             <span className="text-xs font-semibold text-navy">City</span>

@@ -4,6 +4,9 @@ type SwipeTrackProps = {
   children: ReactNode
   className?: string
   gapClassName?: string
+  snap?: boolean
+  ariaLabel?: string
+  paddingClassName?: string
 }
 
 const SNAP_MS = 360
@@ -18,6 +21,9 @@ export default function SwipeTrack({
   children,
   className = '',
   gapClassName = 'gap-4',
+  snap = true,
+  ariaLabel = 'Swipe to browse',
+  paddingClassName = 'scroll-pl-6 scroll-pr-4 pb-2 pl-6 pr-4',
 }: SwipeTrackProps) {
   const trackRef = useRef<HTMLDivElement>(null)
   const isDragging = useRef(false)
@@ -125,8 +131,6 @@ export default function SwipeTrack({
     activePointerId.current = event.pointerId
     startX.current = event.clientX
     scrollLeftStart.current = track.scrollLeft
-    track.setPointerCapture(event.pointerId)
-    track.dataset.dragging = 'true'
   }
 
   const onPointerMove = (event: PointerEvent<HTMLDivElement>) => {
@@ -135,10 +139,15 @@ export default function SwipeTrack({
 
     const delta = event.clientX - startX.current
 
-    if (Math.abs(delta) > DRAG_THRESHOLD) {
+    if (Math.abs(delta) <= DRAG_THRESHOLD) return
+
+    if (!hasDragged.current) {
       hasDragged.current = true
-      event.preventDefault()
+      track.setPointerCapture(event.pointerId)
+      track.dataset.dragging = 'true'
     }
+
+    event.preventDefault()
 
     const maxScroll = Math.max(0, track.scrollWidth - track.clientWidth)
     track.scrollLeft = Math.max(0, Math.min(scrollLeftStart.current - delta, maxScroll))
@@ -156,7 +165,7 @@ export default function SwipeTrack({
       track.releasePointerCapture(event.pointerId)
     }
 
-    if (hasDragged.current) {
+    if (hasDragged.current && snap) {
       settleAfterDrag(track)
     }
   }
@@ -165,7 +174,7 @@ export default function SwipeTrack({
     <div
       ref={trackRef}
       role="region"
-      aria-label="Swipe to browse"
+      aria-label={ariaLabel}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={endDrag}
@@ -177,10 +186,10 @@ export default function SwipeTrack({
           hasDragged.current = false
         }
       }}
-      className={`swipe-track -mx-4 cursor-grab select-none overflow-x-auto overscroll-x-contain scroll-pl-6 scroll-pr-4 pb-2 pl-6 pr-4 scrollbar-hide touch-pan-x [&_*]:[webkit-user-drag:none] [&_img]:pointer-events-none ${className}`.trim()}
+      className={`swipe-track -mx-4 w-full max-w-full min-w-0 cursor-grab overflow-x-auto overscroll-x-contain scrollbar-hide touch-pan-x [&_*]:[webkit-user-drag:none] [&_img]:pointer-events-none ${paddingClassName} ${className}`.trim()}
     >
       <div
-        className={`swipe-track-inner flex w-max min-w-full flex-nowrap after:block after:w-4 after:shrink-0 ${gapClassName}`.trim()}
+        className={`swipe-track-inner flex w-max flex-nowrap after:block after:w-4 after:shrink-0 ${gapClassName}`.trim()}
       >
         {children}
       </div>

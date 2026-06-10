@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react'
 import Footer from './Footer'
 import MobileHeader from './MobileHeader'
-import TopBar from './TopBar'
 
 type PageLayoutProps = {
   children: ReactNode
@@ -9,10 +8,9 @@ type PageLayoutProps = {
 
 export default function PageLayout({ children }: PageLayoutProps) {
   return (
-    <div className="mx-auto min-h-dvh max-w-[390px] bg-surface">
-      <TopBar />
+    <div className="page-shell mx-auto min-h-dvh w-full bg-surface">
       <MobileHeader />
-      <main>{children}</main>
+      <main className="min-w-0">{children}</main>
       <Footer />
     </div>
   )

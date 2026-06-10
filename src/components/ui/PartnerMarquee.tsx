@@ -1,8 +1,9 @@
 type PartnerMarqueeProps = {
   partners: readonly string[]
+  className?: string
 }
 
-function PartnerChip({ name }: { name: string }) {
+export function PartnerChip({ name }: { name: string }) {
   const isMore = name.startsWith('+')
 
   return (
@@ -16,6 +17,16 @@ function PartnerChip({ name }: { name: string }) {
       <span className={`whitespace-nowrap text-xs ${isMore ? 'font-bold' : 'font-semibold'}`}>
         {name}
       </span>
+    </div>
+  )
+}
+
+export function PartnerTagGrid({ partners, className = '' }: PartnerMarqueeProps) {
+  return (
+    <div className={`partner-tags ${className}`.trim()}>
+      {partners.map((partner) => (
+        <PartnerChip key={partner} name={partner} />
+      ))}
     </div>
   )
 }
