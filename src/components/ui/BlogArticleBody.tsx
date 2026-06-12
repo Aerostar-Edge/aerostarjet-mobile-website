@@ -6,7 +6,7 @@ type BlogArticleBodyProps = {
 
 export default function BlogArticleBody({ blocks }: BlogArticleBodyProps) {
   return (
-    <div className="space-y-4">
+    <div className="blog-article-body stack-copy">
       {blocks.map((block, index) => {
         if (block.type === 'paragraph') {
           return (
@@ -18,7 +18,7 @@ export default function BlogArticleBody({ blocks }: BlogArticleBodyProps) {
 
         if (block.type === 'heading') {
           return (
-            <h2 key={index} className="pt-2 text-sm font-bold text-navy">
+            <h2 key={index} className="text-sm font-bold text-navy">
               {block.text}
             </h2>
           )
@@ -26,7 +26,7 @@ export default function BlogArticleBody({ blocks }: BlogArticleBodyProps) {
 
         if (block.type === 'list') {
           return (
-            <ul key={index} className="list-disc space-y-2 pl-5 text-description leading-6 text-body">
+            <ul key={index} className="stack-list list-disc pl-5 text-description leading-6 text-body">
               {block.items.map((item) => (
                 <li key={item}>{item}</li>
               ))}
@@ -36,9 +36,9 @@ export default function BlogArticleBody({ blocks }: BlogArticleBodyProps) {
 
         if (block.type === 'faq') {
           return (
-            <div key={index} className="space-y-3">
+            <div key={index} className="stack-copy">
               {block.items.map((item) => (
-                <div key={item.question} className="space-y-1">
+                <div key={item.question} className="stack-field">
                   <p className="text-xs font-bold text-navy">{item.question}</p>
                   <p className="text-description leading-6 text-body">{item.answer}</p>
                 </div>

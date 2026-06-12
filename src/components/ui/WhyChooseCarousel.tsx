@@ -19,29 +19,35 @@ type WhyChooseCardProps = {
 function WhyChooseCard({ item, className = '', compact = false }: WhyChooseCardProps) {
   return (
     <article
-      className={`why-choose-card overflow-visible rounded-2xl border border-white/16 bg-white/8 ${
-        compact ? 'space-y-2.5 p-4' : 'space-y-3 p-6'
+      className={`why-choose-card rounded-2xl border border-white/16 bg-white/8 ${
+        compact ? 'why-choose-card--compact p-4' : 'p-6'
       } ${className}`.trim()}
     >
       <div
-        className={`flex items-center justify-center rounded-xl bg-accent ${
+        className={`why-choose-card__icon flex shrink-0 items-center justify-center rounded-xl bg-accent ${
           compact ? 'size-11' : 'size-14 rounded-2xl'
         }`}
       >
         <img alt="" className={compact ? 'size-5' : 'size-6'} aria-hidden src={item.icon} />
       </div>
-      <h4
-        className={`font-bold text-surface ${
-          compact ? 'text-sm leading-snug' : 'text-heading-md'
-        }`}
-      >
-        {item.title[0]}
-        <br />
-        {item.title[1]}
-      </h4>
-      <p className={`text-white/82 ${compact ? 'text-[11px] leading-relaxed' : 'text-description'}`}>
-        {item.description}
-      </p>
+      <div className="why-choose-card__body">
+        <h4
+          className={`why-choose-card__title font-bold text-surface ${
+            compact ? 'text-sm leading-snug' : 'text-heading-md'
+          }`}
+        >
+          {item.title[0]}
+          <br />
+          {item.title[1]}
+        </h4>
+        <p
+          className={`why-choose-card__description text-white/82 ${
+            compact ? 'text-[11px] leading-relaxed' : 'text-description'
+          }`}
+        >
+          {item.description}
+        </p>
+      </div>
     </article>
   )
 }
@@ -49,18 +55,38 @@ function WhyChooseCard({ item, className = '', compact = false }: WhyChooseCardP
 function getSlides(scroller: HTMLDivElement) {
   const row = scroller.querySelector('.why-choose-track-inner')
   if (!row) return [] as HTMLElement[]
-  return Array.from(row.querySelectorAll('article'))
+  return Array.from(row.querySelectorAll<HTMLElement>('.why-choose-carousel__slide'))
 }
 
-function getSlideScrollTarget(scroller: HTMLDivElement, slide: HTMLElement) {
-  const paddingLeft = Number.parseFloat(getComputedStyle(scroller).paddingLeft) || 0
-  const slideRect = slide.getBoundingClientRect()
-  const scrollerRect = scroller.getBoundingClientRect()
-  return scroller.scrollLeft + (slideRect.left - scrollerRect.left - paddingLeft)
+function getSlideWidth(scroller: HTMLDivElement) {
+  const styles = getComputedStyle(scroller)
+  const width = Number.parseFloat(styles.getPropertyValue('--why-choose-slide-width'))
+  if (Number.isFinite(width) && width > 0) return width
+
+  const paddingInline =
+    (Number.parseFloat(styles.paddingLeft) || 0) + (Number.parseFloat(styles.paddingRight) || 0)
+  return Math.max(0, scroller.clientWidth - paddingInline)
+}
+
+function getSlideGap(scroller: HTMLDivElement) {
+  const row = scroller.querySelector('.why-choose-track-inner')
+  if (!row) return 0
+
+  const styles = getComputedStyle(row)
+  const gap = Number.parseFloat(styles.columnGap || styles.gap)
+  return Number.isFinite(gap) ? gap : 0
+}
+
+function getSlideStep(scroller: HTMLDivElement) {
+  return getSlideWidth(scroller) + getSlideGap(scroller)
+}
+
+function getSlideScrollTarget(scroller: HTMLDivElement, slideIndex: number) {
+  return slideIndex * getSlideStep(scroller)
 }
 
 function getSlideTargets(scroller: HTMLDivElement, slides: HTMLElement[]) {
-  return slides.map((slide) => getSlideScrollTarget(scroller, slide))
+  return slides.map((_slide, index) => getSlideScrollTarget(scroller, index))
 }
 
 function getIndexForScroll(targets: number[], scroll: number) {
@@ -82,9 +108,12 @@ function getIndexForScroll(targets: number[], scroll: number) {
 
 function getActiveIndex(scroller: HTMLDivElement) {
   const slides = getSlides(scroller)
-  const targets = getSlideTargets(scroller, slides)
-  if (!targets.length) return 0
-  return getIndexForScroll(targets, scroller.scrollLeft)
+  if (!slides.length) return 0
+
+  const step = getSlideStep(scroller)
+  if (step <= 0) return 0
+
+  return Math.max(0, Math.min(slides.length - 1, Math.round(scroller.scrollLeft / step)))
 }
 
 type WhyChooseCarouselProps = {
@@ -113,7 +142,7 @@ export default function WhyChooseCarousel({ items }: WhyChooseCarouselProps) {
     if (!slides.length) return
 
     const clampedIndex = Math.max(0, Math.min(index, slides.length - 1))
-    const target = getSlideScrollTarget(scroller, slides[clampedIndex])
+    const target = getSlideScrollTarget(scroller, clampedIndex)
     const from = scroller.scrollLeft
     const distance = target - from
 
@@ -153,7 +182,7 @@ export default function WhyChooseCarousel({ items }: WhyChooseCarouselProps) {
     if (!slides.length) return
 
     const index = getActiveIndex(scroller)
-    const target = getSlideScrollTarget(scroller, slides[index])
+    const target = getSlideScrollTarget(scroller, index)
 
     if (Math.abs(scroller.scrollLeft - target) > 1) {
       animateToIndex(scroller, index)
@@ -172,7 +201,7 @@ export default function WhyChooseCarousel({ items }: WhyChooseCarouselProps) {
     const scrollEnd = scroller.scrollLeft
     const dragDistance = scrollEnd - scrollStart
     const startIndex = getIndexForScroll(targets, scrollStart)
-    const step = targets.length > 1 ? targets[1] - targets[0] : slides[0].offsetWidth
+    const step = getSlideStep(scroller)
 
     let index: number
 
@@ -262,11 +291,33 @@ export default function WhyChooseCarousel({ items }: WhyChooseCarouselProps) {
       snapToNearest(scroller)
     }
 
-    const onResize = () => {
-      snapToNearest(scroller)
+    const syncSlideWidth = () => {
+      const styles = getComputedStyle(scroller)
+      const paddingInline =
+        (Number.parseFloat(styles.paddingLeft) || 0) + (Number.parseFloat(styles.paddingRight) || 0)
+      const contentWidth = Math.max(0, scroller.clientWidth - paddingInline)
+
+      scroller.style.setProperty('--why-choose-slide-width', `${contentWidth}px`)
+
+      const slides = getSlides(scroller)
+      if (!slides.length) return
+
+      const index = Math.max(0, Math.min(getActiveIndex(scroller), slides.length - 1))
+      scroller.scrollLeft = getSlideScrollTarget(scroller, index)
+      setActiveIndex(index)
     }
 
+    const onResize = () => {
+      syncSlideWidth()
+    }
+
+    syncSlideWidth()
     onScroll()
+
+    const resizeObserver = new ResizeObserver(() => {
+      syncSlideWidth()
+    })
+    resizeObserver.observe(scroller)
     scroller.addEventListener('scroll', onScroll, { passive: true })
     scroller.addEventListener('scroll', scheduleSnap, { passive: true })
     scroller.addEventListener('scrollend', onScrollEnd)
@@ -278,6 +329,7 @@ export default function WhyChooseCarousel({ items }: WhyChooseCarouselProps) {
       scroller.removeEventListener('scroll', scheduleSnap)
       scroller.removeEventListener('scrollend', onScrollEnd)
       window.removeEventListener('resize', onResize)
+      resizeObserver.disconnect()
       cancelAnimation()
     }
   }, [items.length])
@@ -304,22 +356,19 @@ export default function WhyChooseCarousel({ items }: WhyChooseCarouselProps) {
                 hasDragged.current = false
               }
             }}
-            className="why-choose-carousel w-full min-w-0 cursor-grab overflow-x-auto overscroll-x-contain scroll-pl-5 pl-5 scrollbar-hide touch-pan-x select-none [&_*]:[webkit-user-drag:none] [&_img]:pointer-events-none"
+            className="why-choose-carousel w-full min-w-0 cursor-grab overscroll-x-contain scrollbar-hide touch-pan-x select-none [&_*]:[webkit-user-drag:none] [&_img]:pointer-events-none"
           >
-            <div className="why-choose-track-inner flex w-max flex-nowrap gap-4 pr-5 after:block after:w-5 after:shrink-0">
+            <div className="why-choose-track-inner flex w-max flex-nowrap">
               {items.map((item) => (
-                <WhyChooseCard
-                  key={item.title.join(' ')}
-                  item={item}
-                  compact
-                  className="w-[calc(100vw-4.5rem)] max-w-[330px] shrink-0"
-                />
+                <div key={item.title.join(' ')} className="why-choose-carousel__slide shrink-0">
+                  <WhyChooseCard item={item} compact className="why-choose-carousel__card" />
+                </div>
               ))}
             </div>
           </div>
         </div>
         <div
-          className="mt-4 flex items-center justify-center gap-2"
+          className="carousel-dots flex items-center justify-center gap-2"
           role="tablist"
           aria-label="Feature carousel pagination"
         >

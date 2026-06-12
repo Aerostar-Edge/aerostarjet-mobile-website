@@ -21,12 +21,12 @@ export default function BlogCard({ post, index = 0 }: BlogCardProps) {
   return (
     <Link
       to={`/${post.slug}`}
-      className="block overflow-hidden rounded-2xl border border-border bg-surface shadow-sm transition-shadow hover:shadow-md"
+      className="blog-card-link block overflow-hidden rounded-2xl border border-border bg-surface shadow-sm"
     >
       <div className="blog-card__media w-full overflow-hidden bg-bg-image">
         <img alt="" className="blog-card__image" src={image} aria-hidden />
       </div>
-      <div className="space-y-1.5 p-3">
+      <div className="blog-card__body p-3">
         <p className="text-[10px] font-semibold text-primary">{post.date}</p>
         <h2 className="line-clamp-4 text-xs font-bold leading-snug text-navy">{post.title}</h2>
       </div>

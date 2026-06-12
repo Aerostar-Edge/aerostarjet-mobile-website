@@ -5,7 +5,9 @@ import {
   appendPreviewParams,
   clearPreviewStorage,
   getPreviewBreakpoint,
+  isPreviewDismissed,
   readPreviewStorage,
+  setPreviewDismissed,
   writePreviewStorage,
   type PreviewBreakpoint,
 } from '../utils/preview'
@@ -40,6 +42,7 @@ export function usePreview() {
 
   const setPreviewWidth = useCallback(
     (width: number) => {
+      setPreviewDismissed(false)
       const next = new URLSearchParams(searchParams)
       next.set('preview', 'true')
       next.set('w', String(width))
@@ -58,6 +61,7 @@ export function usePreview() {
 
   const exitPreview = useCallback(() => {
     clearPreviewStorage()
+    setPreviewDismissed(true)
     const next = new URLSearchParams(searchParams)
     next.delete('preview')
     next.delete('w')
@@ -94,12 +98,21 @@ export function usePreview() {
     }
 
     const stored = readPreviewStorage()
-    if (!stored?.active) return
+    if (stored?.active) {
+      const next = new URLSearchParams(searchParams)
+      next.set('preview', 'true')
+      next.set('w', String(stored.width))
+      setSearchParams(next, { replace: true })
+      return
+    }
 
-    const next = new URLSearchParams(searchParams)
-    next.set('preview', 'true')
-    next.set('w', String(stored.width))
-    setSearchParams(next, { replace: true })
+    if (import.meta.env.DEV && !isPreviewDismissed()) {
+      const next = new URLSearchParams(searchParams)
+      next.set('preview', 'true')
+      next.set('w', String(DEFAULT_WIDTH))
+      setSearchParams(next, { replace: true })
+      persistPreview(DEFAULT_WIDTH)
+    }
   }, [persistPreview, searchParams, setSearchParams, urlPreview])
 
   return {

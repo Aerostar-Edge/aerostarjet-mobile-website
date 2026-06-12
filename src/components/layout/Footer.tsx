@@ -1,24 +1,41 @@
+import { useEffect, useState } from 'react'
 import { assets } from '../../data/assets'
+import { usePreview } from '../../hooks/usePreview'
 import PreviewLink from './PreviewLink'
 
-const footerColumns = [
-  [
-    { label: 'Home', to: '/' },
-    { label: 'Placements', to: '/placements' },
-    { label: 'Blogs', to: '/blogs' },
-  ],
-  [
-    { label: 'Courses', to: '/courses' },
-    { label: 'About Us', to: '/about' },
-  ],
-  [{ label: 'Apply', to: '/apply' }],
+const footerLinks = [
+  { label: 'Home', to: '/' },
+  { label: 'Placements', to: '/placements' },
+  { label: 'Blogs', to: '/blogs' },
+  { label: 'Courses', to: '/courses' },
+  { label: 'About Us', to: '/about' },
+  { label: 'Apply', to: '/apply' },
 ] as const
 
-const footerLinks = footerColumns.flat()
-
 export default function Footer() {
+  const { isPreview, previewWidth } = usePreview()
+  const [isLiveMobile, setIsLiveMobile] = useState(() => {
+    if (typeof window === 'undefined') return false
+    return window.matchMedia('(max-width: 767px)').matches
+  })
+
+  useEffect(() => {
+    if (isPreview) return
+
+    const mediaQuery = window.matchMedia('(max-width: 767px)')
+    const syncMobileLayout = () => setIsLiveMobile(mediaQuery.matches)
+
+    syncMobileLayout()
+    mediaQuery.addEventListener('change', syncMobileLayout)
+    return () => mediaQuery.removeEventListener('change', syncMobileLayout)
+  }, [isPreview])
+
+  const mobileLayout = isPreview ? previewWidth < 768 : isLiveMobile
+
   return (
-    <footer className="site-footer bg-navy-deep text-surface">
+    <footer
+      className={`site-footer bg-navy-deep text-surface${mobileLayout ? ' site-footer--mobile-layout' : ''}`}
+    >
       <div className="shell-footer-inner mx-auto w-full px-4">
         <div className="footer-main">
           <div className="footer-brand">
@@ -32,11 +49,30 @@ export default function Footer() {
           <div className="footer-explore">
             <h5 className="text-body font-medium text-surface">Explore</h5>
             <nav className="footer-explore-links" aria-label="Footer explore links">
-              {footerLinks.map((link) => (
-                <PreviewLink key={link.label} to={link.to} className="footer-link">
-                  {link.label}
-                </PreviewLink>
-              ))}
+              {mobileLayout ? (
+                <>
+                  <div className="footer-explore-links-row">
+                    {footerLinks.slice(0, 3).map((link) => (
+                      <PreviewLink key={link.label} to={link.to} className="footer-link">
+                        {link.label}
+                      </PreviewLink>
+                    ))}
+                  </div>
+                  <div className="footer-explore-links-row">
+                    {footerLinks.slice(3).map((link) => (
+                      <PreviewLink key={link.label} to={link.to} className="footer-link">
+                        {link.label}
+                      </PreviewLink>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                footerLinks.map((link) => (
+                  <PreviewLink key={link.label} to={link.to} className="footer-link">
+                    {link.label}
+                  </PreviewLink>
+                ))
+              )}
             </nav>
           </div>
         </div>
@@ -47,12 +83,9 @@ export default function Footer() {
           ©2026 Aerostar Aviation Academy. All rights reserved.
         </p>
         <div className="footer-legal-links">
-          <a href="#" className="footer-link">
+          <PreviewLink to="/privacy-policy" className="footer-link">
             Privacy Policy
-          </a>
-          <a href="#" className="footer-link">
-            Terms of Service
-          </a>
+          </PreviewLink>
         </div>
       </div>
     </footer>

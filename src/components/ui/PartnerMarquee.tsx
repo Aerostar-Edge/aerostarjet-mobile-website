@@ -1,3 +1,5 @@
+import { useNoOrphanFlexWrap } from '../../hooks/useNoOrphanFlexWrap'
+
 type PartnerMarqueeProps = {
   partners: readonly string[]
   className?: string
@@ -8,9 +10,9 @@ export function PartnerChip({ name }: { name: string }) {
 
   return (
     <div
-      className={`flex min-h-12 shrink-0 items-center justify-center rounded-full px-4 ${
+      className={`site-tag flex min-h-12 shrink-0 items-center justify-center rounded-full px-4 ${
         isMore
-          ? 'bg-primary-alt text-surface'
+          ? 'site-tag--dark bg-primary-alt text-surface'
           : 'border border-border bg-surface text-navy'
       }`}
     >
@@ -22,8 +24,10 @@ export function PartnerChip({ name }: { name: string }) {
 }
 
 export function PartnerTagGrid({ partners, className = '' }: PartnerMarqueeProps) {
+  const ref = useNoOrphanFlexWrap<HTMLDivElement>(partners.length)
+
   return (
-    <div className={`partner-tags ${className}`.trim()}>
+    <div ref={ref} className={`partner-tags partner-tags--balanced ${className}`.trim()}>
       {partners.map((partner) => (
         <PartnerChip key={partner} name={partner} />
       ))}

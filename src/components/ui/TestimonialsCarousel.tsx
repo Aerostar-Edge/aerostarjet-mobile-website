@@ -5,9 +5,18 @@ import {
   useState,
   type CSSProperties,
   type PointerEvent,
+  type RefObject,
 } from 'react'
 import type { Testimonial } from '../../data/content'
 import { usePreview } from '../../hooks/usePreview'
+import TestimonialVideoModal, {
+  TESTIMONIAL_VIDEO_MODAL_CLOSE_MS,
+} from './TestimonialVideoModal'
+
+export type TestimonialCarouselNavigator = {
+  goToIndex: (index: number) => void
+  goToNext: (options?: { smooth?: boolean }) => void
+}
 
 const SNAP_MS = 360
 const DRAG_THRESHOLD = 4
@@ -17,6 +26,9 @@ const STACK_DRAG_COMMIT = 72
 const STACK_EXIT_MS = 380
 const STACK_BACK_LAYERS = 3
 const STACK_FLING_VELOCITY = 0.45
+const AUTO_ADVANCE_MS = 520
+const POST_MODAL_ADVANCE_DELAY_MS = 120
+const AUTO_ADVANCE_DRAG_START = 56
 
 function easeOutCubic(t: number) {
   return 1 - (1 - t) ** 3
@@ -65,8 +77,12 @@ function getActiveIndex(scroller: HTMLDivElement) {
 
 type TestimonialCardProps = {
   item: Testimonial
+  index: number
   className?: string
   stacked?: boolean
+  cardRef?: RefObject<HTMLQuoteElement | null>
+  onOpen?: (index: number, trigger: HTMLElement) => void
+  openOnClick?: boolean
 }
 
 function TestimonialCardShell() {
@@ -78,57 +94,68 @@ function TestimonialCardShell() {
   )
 }
 
-function TestimonialCard({ item, className = '', stacked = false }: TestimonialCardProps) {
+function TestimonialCard({
+  item,
+  index,
+  className = '',
+  stacked = false,
+  cardRef,
+  onOpen,
+  openOnClick = true,
+}: TestimonialCardProps) {
+  const handleOpen = (trigger: HTMLElement) => {
+    if (!item.videoUrl) return
+    onOpen?.(index, trigger)
+  }
+
   return (
     <blockquote
-      className={`testimonial-card rounded-lg border border-border-alt bg-surface shadow-md ${
+      ref={cardRef}
+      tabIndex={onOpen && item.videoUrl ? 0 : undefined}
+      role={onOpen && item.videoUrl ? 'button' : undefined}
+      aria-label={
+        onOpen && item.videoUrl ? `Play testimonial video from ${item.name}` : undefined
+      }
+      onKeyDown={(event) => {
+        if (!onOpen || !item.videoUrl) return
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault()
+          handleOpen(event.currentTarget)
+        }
+      }}
+      onClick={(event) => {
+        if (!openOnClick || !onOpen || !item.videoUrl) return
+        event.stopPropagation()
+        handleOpen(event.currentTarget)
+      }}
+      className={`testimonial-card testimonial-card--interactive rounded-lg border border-border-alt bg-surface shadow-md ${
         stacked
           ? 'w-full select-none p-6'
           : 'w-[64vw] max-w-[210px] shrink-0 p-4'
       } ${className}`.trim()}
     >
-      <span className={`font-bold leading-none text-quote ${stacked ? 'text-4xl' : 'text-3xl'}`}>
-        &ldquo;
-      </span>
-      <p
-        className={`testimonial-card__quote mt-1.5 leading-relaxed text-body ${
-          stacked ? 'text-sm' : 'text-[10px]'
-        }`}
-      >
-        {item.quote}
-      </p>
-      <footer
-        className={`mt-3 flex items-center gap-2 border-t border-border-alt pt-3 ${
-          stacked ? 'mt-4 pt-4' : ''
-        }`}
-      >
-        <div
-          className={`flex shrink-0 items-center justify-center rounded-full bg-bg-avatar font-bold text-primary-alt ${
-            stacked ? 'size-11 text-sm' : 'size-9 text-xs'
-          }`}
-        >
-          {item.initial}
-        </div>
-        <div className="min-w-0">
-          <p className={`truncate font-semibold text-navy ${stacked ? 'text-sm' : 'text-[10px]'}`}>
-            {item.name}
-          </p>
-          <p className={`truncate text-muted-alt ${stacked ? 'text-xs' : 'text-[10px]'}`}>
-            {item.role}
-          </p>
-        </div>
-      </footer>
+      <div className="testimonial-card__video" aria-hidden="true">
+        <span className="testimonial-card__play" aria-hidden="true">
+          ▶
+        </span>
+      </div>
+      <div className="testimonial-card__meta">
+        <p className={`font-semibold text-navy ${stacked ? 'text-sm' : 'text-[10px]'}`}>{item.name}</p>
+        <p className={`text-muted-alt ${stacked ? 'text-xs' : 'text-[10px]'}`}>{item.role}</p>
+      </div>
     </blockquote>
   )
 }
 
 type TestimonialsStackProps = {
   testimonials: Testimonial[]
+  onOpenVideo?: (index: number, trigger: HTMLElement) => void
+  onRegisterNavigator?: (navigator: TestimonialCarouselNavigator | null) => void
 }
 
 type StackExitDirection = 'next' | 'prev' | null
 
-function TestimonialsStack({ testimonials }: TestimonialsStackProps) {
+function TestimonialsStack({ testimonials, onOpenVideo, onRegisterNavigator }: TestimonialsStackProps) {
   const stackRef = useRef<HTMLDivElement>(null)
   const [activeIndex, setActiveIndex] = useState(0)
   const [dragX, setDragX] = useState(0)
@@ -138,8 +165,10 @@ function TestimonialsStack({ testimonials }: TestimonialsStackProps) {
   const [isPromoting, setIsPromoting] = useState(false)
   const [isResetting, setIsResetting] = useState(false)
   const [isAnimating, setIsAnimating] = useState(false)
+  const [isSmoothAdvancing, setIsSmoothAdvancing] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
   const isDraggingRef = useRef(false)
+  const smoothAdvanceTimeoutRef = useRef<number | null>(null)
   const startX = useRef(0)
   const lastMoveX = useRef(0)
   const lastMoveTime = useRef(0)
@@ -162,10 +191,17 @@ function TestimonialsStack({ testimonials }: TestimonialsStackProps) {
   }, [])
 
   const throwCard = useCallback(
-    (direction: 'next' | 'prev', releaseDelta: number, velocity = 0) => {
+    (
+      direction: 'next' | 'prev',
+      releaseDelta: number,
+      velocity = 0,
+      targetIndex?: number,
+    ) => {
       if (isAnimating || count === 0) return
 
-      const nextIndex = direction === 'next' ? activeIndex + 1 : activeIndex - 1
+      const nextIndex =
+        targetIndex ?? (direction === 'next' ? activeIndex + 1 : activeIndex - 1)
+      const normalizedIndex = ((nextIndex % count) + count) % count
       const exitX = getExitDistance(direction, velocity)
 
       setIsAnimating(true)
@@ -183,7 +219,7 @@ function TestimonialsStack({ testimonials }: TestimonialsStackProps) {
 
       window.setTimeout(() => {
         setIsResetting(true)
-        setActiveIndex((nextIndex + count) % count)
+        setActiveIndex(normalizedIndex)
         setExitingIndex(null)
         setDragX(0)
         setExitOpacity(1)
@@ -200,6 +236,95 @@ function TestimonialsStack({ testimonials }: TestimonialsStackProps) {
     },
     [activeIndex, count, getExitDistance, isAnimating],
   )
+
+  const completeThrow = useCallback((normalizedIndex: number) => {
+    setIsResetting(true)
+    setActiveIndex(normalizedIndex)
+    setExitingIndex(null)
+    setDragX(0)
+    setExitOpacity(1)
+    setExitDirection(null)
+    setIsPromoting(false)
+    setIsSmoothAdvancing(false)
+    setIsAnimating(false)
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setIsResetting(false)
+      })
+    })
+  }, [])
+
+  const throwCardSmooth = useCallback(
+    (direction: 'next' | 'prev', targetIndex?: number) => {
+      if (isAnimating || count === 0) return
+
+      const nextIndex =
+        targetIndex ?? (direction === 'next' ? activeIndex + 1 : activeIndex - 1)
+      const normalizedIndex = ((nextIndex % count) + count) % count
+      const exitX = getExitDistance(direction, 0)
+      const startDrag = direction === 'next' ? -AUTO_ADVANCE_DRAG_START : AUTO_ADVANCE_DRAG_START
+
+      setIsAnimating(true)
+      setIsSmoothAdvancing(true)
+      setExitDirection(direction)
+      setExitingIndex(activeIndex)
+      setIsPromoting(direction === 'next')
+      setDragX(startDrag)
+      setExitOpacity(Math.max(0.35, 1 - Math.abs(startDrag) / 420))
+
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setDragX(exitX)
+          setExitOpacity(0)
+        })
+      })
+
+      if (smoothAdvanceTimeoutRef.current !== null) {
+        window.clearTimeout(smoothAdvanceTimeoutRef.current)
+      }
+
+      smoothAdvanceTimeoutRef.current = window.setTimeout(() => {
+        smoothAdvanceTimeoutRef.current = null
+        completeThrow(normalizedIndex)
+      }, AUTO_ADVANCE_MS)
+    },
+    [activeIndex, completeThrow, count, getExitDistance, isAnimating],
+  )
+
+  const goToIndex = useCallback(
+    (index: number) => {
+      if (index === activeIndex || isAnimating || count === 0) return
+
+      const forward = (index - activeIndex + count) % count
+      const backward = (activeIndex - index + count) % count
+      const direction = forward <= backward ? 'next' : 'prev'
+      throwCard(direction, 0, 0, index)
+    },
+    [activeIndex, count, isAnimating, throwCard],
+  )
+
+  const goToNext = useCallback(
+    (options?: { smooth?: boolean }) => {
+      if (activeIndex >= count - 1 || isAnimating || count === 0) return
+      if (options?.smooth) {
+        throwCardSmooth('next', activeIndex + 1)
+        return
+      }
+      throwCard('next', 0, 0, activeIndex + 1)
+    },
+    [activeIndex, count, isAnimating, throwCard, throwCardSmooth],
+  )
+
+  useEffect(() => {
+    onRegisterNavigator?.({ goToIndex, goToNext })
+    return () => {
+      if (smoothAdvanceTimeoutRef.current !== null) {
+        window.clearTimeout(smoothAdvanceTimeoutRef.current)
+      }
+      onRegisterNavigator?.(null)
+    }
+  }, [goToIndex, goToNext, onRegisterNavigator])
 
   const onPointerDown = (event: PointerEvent<HTMLDivElement>) => {
     if (isAnimating || event.button !== 0) return
@@ -244,6 +369,18 @@ function TestimonialsStack({ testimonials }: TestimonialsStackProps) {
     const delta = event.clientX - startX.current
     const velocity = velocityX.current
 
+    if (
+      Math.abs(delta) <= DRAG_THRESHOLD &&
+      Math.abs(velocity) < STACK_FLING_VELOCITY &&
+      onOpenVideo
+    ) {
+      const card = event.currentTarget.querySelector('.testimonial-card')
+      if (card instanceof HTMLElement) {
+        onOpenVideo(activeIndex, card)
+      }
+      return
+    }
+
     if (delta <= -STACK_DRAG_COMMIT || velocity <= -STACK_FLING_VELOCITY) {
       throwCard('next', delta, velocity)
       return
@@ -267,8 +404,13 @@ function TestimonialsStack({ testimonials }: TestimonialsStackProps) {
 
   if (!count) return null
 
-  const topRotate =
-    exitDirection === 'next' ? -22 : exitDirection === 'prev' ? 22 : dragX * 0.04
+  const topRotate = isSmoothAdvancing
+    ? dragX * 0.04
+    : exitDirection === 'next'
+      ? -22
+      : exitDirection === 'prev'
+        ? 22
+        : dragX * 0.04
   const incomingIndex =
     exitDirection === 'prev' ? (activeIndex - 1 + count) % count : null
   const topIndex = exitingIndex ?? activeIndex
@@ -277,7 +419,7 @@ function TestimonialsStack({ testimonials }: TestimonialsStackProps) {
     <div className="testimonials-stack-wrap select-none [&_*]:select-none">
       <div
         ref={stackRef}
-        className={`testimonials-stack${isPromoting ? ' testimonials-stack--promoting' : ''}${isResetting ? ' testimonials-stack--resetting' : ''}`}
+        className={`testimonials-stack${isPromoting ? ' testimonials-stack--promoting' : ''}${isSmoothAdvancing ? ' testimonials-stack--smooth-advancing' : ''}${isResetting ? ' testimonials-stack--resetting' : ''}`}
         role="region"
         aria-label="Student testimonials"
         aria-roledescription="stacked carousel"
@@ -298,7 +440,7 @@ function TestimonialsStack({ testimonials }: TestimonialsStackProps) {
               aria-hidden
             >
               {isPromoting && layer === 1 ? (
-                <TestimonialCard item={item} stacked />
+                <TestimonialCard item={item} index={(activeIndex + layer) % count} stacked />
               ) : (
                 <TestimonialCardShell />
               )}
@@ -308,12 +450,12 @@ function TestimonialsStack({ testimonials }: TestimonialsStackProps) {
 
         {incomingIndex !== null ? (
           <div className="testimonials-stack__incoming" aria-hidden>
-            <TestimonialCard item={testimonials[incomingIndex]} stacked />
+            <TestimonialCard item={testimonials[incomingIndex]} index={incomingIndex} stacked />
           </div>
         ) : null}
 
         <div
-          className={`testimonials-stack__top${isDragging ? ' testimonials-stack__top--dragging' : ''}${exitDirection ? ' testimonials-stack__top--exiting' : ''}${isResetting ? ' testimonials-stack__top--resetting' : ''}`}
+          className={`testimonials-stack__top${isDragging ? ' testimonials-stack__top--dragging' : ''}${exitDirection ? ' testimonials-stack__top--exiting' : ''}${isSmoothAdvancing ? ' testimonials-stack__top--smooth-advancing' : ''}${isResetting ? ' testimonials-stack__top--resetting' : ''}`}
           style={{
             transform: `translateX(${dragX}px) rotate(${topRotate}deg)`,
             opacity: exitOpacity,
@@ -323,12 +465,18 @@ function TestimonialsStack({ testimonials }: TestimonialsStackProps) {
           onPointerUp={endDrag}
           onPointerCancel={endDrag}
         >
-          <TestimonialCard item={testimonials[topIndex]} stacked />
+          <TestimonialCard
+            item={testimonials[topIndex]}
+            index={topIndex}
+            stacked
+            openOnClick={false}
+            onOpen={onOpenVideo}
+          />
         </div>
       </div>
 
       <div
-        className="mt-6 flex items-center justify-center gap-2"
+        className="carousel-dots flex items-center justify-center gap-2"
         role="tablist"
         aria-label="Testimonial stack pagination"
       >
@@ -356,6 +504,8 @@ function TestimonialsStack({ testimonials }: TestimonialsStackProps) {
 
 type TestimonialsCarouselProps = {
   testimonials: Testimonial[]
+  onOpenVideo?: (index: number, trigger: HTMLElement) => void
+  onRegisterNavigator?: (navigator: TestimonialCarouselNavigator | null) => void
 }
 
 type FadeExitDirection = 'next' | 'prev' | null
@@ -382,7 +532,11 @@ function useTestimonialsFadeMode() {
   return matchesViewport
 }
 
-function TestimonialsFadeCarousel({ testimonials }: TestimonialsCarouselProps) {
+function TestimonialsFadeCarousel({
+  testimonials,
+  onOpenVideo,
+  onRegisterNavigator,
+}: TestimonialsCarouselProps) {
   const stageRef = useRef<HTMLDivElement>(null)
   const [activeIndex, setActiveIndex] = useState(0)
   const [dragX, setDragX] = useState(0)
@@ -392,8 +546,10 @@ function TestimonialsFadeCarousel({ testimonials }: TestimonialsCarouselProps) {
   const [incomingIndex, setIncomingIndex] = useState<number | null>(null)
   const [isResetting, setIsResetting] = useState(false)
   const [isAnimating, setIsAnimating] = useState(false)
+  const [isSmoothAdvancing, setIsSmoothAdvancing] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
   const isDraggingRef = useRef(false)
+  const smoothAdvanceTimeoutRef = useRef<number | null>(null)
   const startX = useRef(0)
   const lastMoveX = useRef(0)
   const lastMoveTime = useRef(0)
@@ -462,6 +618,61 @@ function TestimonialsFadeCarousel({ testimonials }: TestimonialsCarouselProps) {
     [activeIndex, count, getExitDistance, isAnimating],
   )
 
+  const completeThrow = useCallback((normalizedIndex: number) => {
+    setIsResetting(true)
+    setActiveIndex(normalizedIndex)
+    setExitingIndex(null)
+    setIncomingIndex(null)
+    setDragX(0)
+    setExitOpacity(1)
+    setExitDirection(null)
+    setIsSmoothAdvancing(false)
+    setIsAnimating(false)
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setIsResetting(false)
+      })
+    })
+  }, [])
+
+  const throwCardSmooth = useCallback(
+    (direction: 'next' | 'prev', targetIndex?: number) => {
+      if (isAnimating || count === 0) return
+
+      const nextIndex =
+        targetIndex ?? (direction === 'next' ? activeIndex + 1 : activeIndex - 1)
+      const normalizedIndex = ((nextIndex % count) + count) % count
+      const exitX = getExitDistance(direction, 0)
+      const startDrag = direction === 'next' ? -AUTO_ADVANCE_DRAG_START : AUTO_ADVANCE_DRAG_START
+
+      setIsAnimating(true)
+      setIsSmoothAdvancing(true)
+      setExitDirection(direction)
+      setExitingIndex(activeIndex)
+      setIncomingIndex(normalizedIndex)
+      setDragX(startDrag)
+      setExitOpacity(Math.max(0.35, 1 - Math.abs(startDrag) / 420))
+
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setDragX(exitX)
+          setExitOpacity(0)
+        })
+      })
+
+      if (smoothAdvanceTimeoutRef.current !== null) {
+        window.clearTimeout(smoothAdvanceTimeoutRef.current)
+      }
+
+      smoothAdvanceTimeoutRef.current = window.setTimeout(() => {
+        smoothAdvanceTimeoutRef.current = null
+        completeThrow(normalizedIndex)
+      }, AUTO_ADVANCE_MS)
+    },
+    [activeIndex, completeThrow, count, getExitDistance, isAnimating],
+  )
+
   const goToIndex = useCallback(
     (index: number) => {
       if (index === activeIndex || isAnimating || count === 0) return
@@ -473,6 +684,28 @@ function TestimonialsFadeCarousel({ testimonials }: TestimonialsCarouselProps) {
     },
     [activeIndex, count, isAnimating, throwCard],
   )
+
+  const goToNext = useCallback(
+    (options?: { smooth?: boolean }) => {
+      if (activeIndex >= count - 1 || isAnimating || count === 0) return
+      if (options?.smooth) {
+        throwCardSmooth('next', activeIndex + 1)
+        return
+      }
+      throwCard('next', 0, 0, activeIndex + 1)
+    },
+    [activeIndex, count, isAnimating, throwCard, throwCardSmooth],
+  )
+
+  useEffect(() => {
+    onRegisterNavigator?.({ goToIndex, goToNext })
+    return () => {
+      if (smoothAdvanceTimeoutRef.current !== null) {
+        window.clearTimeout(smoothAdvanceTimeoutRef.current)
+      }
+      onRegisterNavigator?.(null)
+    }
+  }, [goToIndex, goToNext, onRegisterNavigator])
 
   const onPointerDown = (event: PointerEvent<HTMLDivElement>) => {
     if (isAnimating || event.button !== 0) return
@@ -520,6 +753,18 @@ function TestimonialsFadeCarousel({ testimonials }: TestimonialsCarouselProps) {
     const delta = event.clientX - startX.current
     const velocity = velocityX.current
 
+    if (
+      Math.abs(delta) <= DRAG_THRESHOLD &&
+      Math.abs(velocity) < STACK_FLING_VELOCITY &&
+      onOpenVideo
+    ) {
+      const card = event.currentTarget.querySelector('.testimonial-card')
+      if (card instanceof HTMLElement) {
+        onOpenVideo(activeIndex, card)
+      }
+      return
+    }
+
     if (delta <= -STACK_DRAG_COMMIT || velocity <= -STACK_FLING_VELOCITY) {
       throwCard('next', delta, velocity)
       return
@@ -543,29 +788,36 @@ function TestimonialsFadeCarousel({ testimonials }: TestimonialsCarouselProps) {
 
   if (!count) return null
 
-  const topRotate =
-    exitDirection === 'next' ? -8 : exitDirection === 'prev' ? 8 : dragX * 0.02
+  const topRotate = isSmoothAdvancing
+    ? dragX * 0.02
+    : exitDirection === 'next'
+      ? -8
+      : exitDirection === 'prev'
+        ? 8
+        : dragX * 0.02
   const topIndex = exitingIndex ?? activeIndex
   const stageWidth = stageRef.current?.offsetWidth ?? 400
   const peekIndex =
-    isDragging && !exitDirection
-      ? dragX < -DRAG_THRESHOLD
-        ? (activeIndex + 1) % count
-        : dragX > DRAG_THRESHOLD
-          ? (activeIndex - 1 + count) % count
-          : null
-      : null
+    isSmoothAdvancing && incomingIndex !== null
+      ? incomingIndex
+      : isDragging && !exitDirection
+        ? dragX < -DRAG_THRESHOLD
+          ? (activeIndex + 1) % count
+          : dragX > DRAG_THRESHOLD
+            ? (activeIndex - 1 + count) % count
+            : null
+        : null
 
   return (
     <div className="testimonials-stack-wrap testimonials-fade-wrap select-none [&_*]:select-none">
       <div
         ref={stageRef}
-        className={`testimonials-fade-stage${isResetting ? ' testimonials-fade-stage--resetting' : ''}`}
+        className={`testimonials-fade-stage${isResetting ? ' testimonials-fade-stage--resetting' : ''}${isSmoothAdvancing ? ' testimonials-fade-stage--smooth-advancing' : ''}`}
         role="region"
         aria-label="Student testimonials"
         aria-roledescription="carousel"
       >
-        {incomingIndex !== null ? (
+        {incomingIndex !== null && !isSmoothAdvancing ? (
           <div
             className={`testimonials-fade-incoming${
               exitDirection === 'next'
@@ -574,7 +826,7 @@ function TestimonialsFadeCarousel({ testimonials }: TestimonialsCarouselProps) {
             }`}
             aria-hidden
           >
-            <TestimonialCard item={testimonials[incomingIndex]} stacked className="h-full" />
+            <TestimonialCard item={testimonials[incomingIndex]} index={incomingIndex} stacked className="h-full" />
           </div>
         ) : null}
 
@@ -591,12 +843,12 @@ function TestimonialsFadeCarousel({ testimonials }: TestimonialsCarouselProps) {
             }}
             aria-hidden
           >
-            <TestimonialCard item={testimonials[peekIndex]} stacked className="h-full" />
+            <TestimonialCard item={testimonials[peekIndex]} index={peekIndex} stacked className="h-full" />
           </div>
         ) : null}
 
         <div
-          className={`testimonials-fade-top${isDragging ? ' testimonials-fade-top--dragging' : ''}${exitDirection ? ' testimonials-fade-top--exiting' : ''}${isResetting ? ' testimonials-fade-top--resetting' : ''}`}
+          className={`testimonials-fade-top${isDragging ? ' testimonials-fade-top--dragging' : ''}${exitDirection ? ' testimonials-fade-top--exiting' : ''}${isSmoothAdvancing ? ' testimonials-fade-top--smooth-advancing' : ''}${isResetting ? ' testimonials-fade-top--resetting' : ''}`}
           style={{
             transform: `translateX(${dragX}px) rotate(${topRotate}deg)`,
             opacity: exitOpacity,
@@ -607,12 +859,19 @@ function TestimonialsFadeCarousel({ testimonials }: TestimonialsCarouselProps) {
           onPointerUp={endDrag}
           onPointerCancel={endDrag}
         >
-          <TestimonialCard item={testimonials[topIndex]} stacked className="h-full" />
+          <TestimonialCard
+            item={testimonials[topIndex]}
+            index={topIndex}
+            stacked
+            className="h-full"
+            openOnClick={false}
+            onOpen={onOpenVideo}
+          />
         </div>
       </div>
 
       <div
-        className="mt-6 flex items-center justify-center gap-2"
+        className="carousel-dots flex items-center justify-center gap-2"
         role="tablist"
         aria-label="Testimonial carousel pagination"
       >
@@ -635,16 +894,63 @@ function TestimonialsFadeCarousel({ testimonials }: TestimonialsCarouselProps) {
   )
 }
 
-export default function TestimonialsCarousel({ testimonials }: TestimonialsCarouselProps) {
+export default function TestimonialsCarousel({ testimonials }: { testimonials: Testimonial[] }) {
   const useFadeCarousel = useTestimonialsFadeMode()
   const scrollRef = useRef<HTMLDivElement>(null)
   const [activeIndex, setActiveIndex] = useState(0)
+  const [modalIndex, setModalIndex] = useState<number | null>(null)
+  const [isModalClosing, setIsModalClosing] = useState(false)
+  const carouselNavRef = useRef<TestimonialCarouselNavigator | null>(null)
+  const openTriggerRef = useRef<HTMLElement | null>(null)
   const isDragging = useRef(false)
   const startX = useRef(0)
   const scrollLeftStart = useRef(0)
   const hasDragged = useRef(false)
   const activePointerId = useRef<number | null>(null)
   const animationFrame = useRef<number | null>(null)
+
+  const registerNavigator = useCallback((navigator: TestimonialCarouselNavigator | null) => {
+    carouselNavRef.current = navigator
+  }, [])
+
+  const openVideo = useCallback((index: number, trigger: HTMLElement) => {
+    openTriggerRef.current = trigger
+    setModalIndex(index)
+    carouselNavRef.current?.goToIndex(index)
+  }, [])
+
+  const closeVideo = useCallback((options?: { advanceAfterClose?: boolean }) => {
+    const endedIndex = modalIndex
+    setIsModalClosing(true)
+    window.setTimeout(() => {
+      setModalIndex(null)
+      setIsModalClosing(false)
+
+      if (
+        options?.advanceAfterClose &&
+        endedIndex !== null &&
+        endedIndex < testimonials.length - 1
+      ) {
+        window.setTimeout(() => {
+          carouselNavRef.current?.goToNext({ smooth: true })
+        }, POST_MODAL_ADVANCE_DELAY_MS)
+        return
+      }
+
+      openTriggerRef.current?.focus()
+    }, TESTIMONIAL_VIDEO_MODAL_CLOSE_MS)
+  }, [modalIndex, testimonials.length])
+
+  const handleVideoEnded = useCallback(() => {
+    if (modalIndex === null) return
+
+    if (modalIndex >= testimonials.length - 1) {
+      closeVideo()
+      return
+    }
+
+    closeVideo({ advanceAfterClose: true })
+  }, [closeVideo, modalIndex, testimonials.length])
 
   const cancelAnimation = () => {
     if (animationFrame.current !== null) {
@@ -851,13 +1157,13 @@ export default function TestimonialsCarousel({ testimonials }: TestimonialsCarou
           className="testimonials-carousel w-full min-w-0 cursor-grab overflow-x-auto overscroll-x-contain scroll-pl-5 pl-5 scrollbar-hide touch-pan-x select-none [&_*]:[webkit-user-drag:none]"
         >
           <div className="testimonials-track-inner flex w-max flex-nowrap gap-3 pr-5 after:block after:w-5 after:shrink-0">
-            {testimonials.map((item) => (
-              <TestimonialCard key={item.name} item={item} />
+            {testimonials.map((item, index) => (
+              <TestimonialCard key={item.name} item={item} index={index} onOpen={openVideo} />
             ))}
           </div>
         </div>
         <div
-          className="mt-4 flex items-center justify-center gap-2"
+          className="carousel-dots flex items-center justify-center gap-2"
           role="tablist"
           aria-label="Testimonial carousel pagination"
         >
@@ -876,10 +1182,29 @@ export default function TestimonialsCarousel({ testimonials }: TestimonialsCarou
       </div>
 
       {useFadeCarousel ? (
-        <TestimonialsFadeCarousel testimonials={testimonials} />
+        <TestimonialsFadeCarousel
+          testimonials={testimonials}
+          onOpenVideo={openVideo}
+          onRegisterNavigator={registerNavigator}
+        />
       ) : (
-        <TestimonialsStack testimonials={testimonials} />
+        <TestimonialsStack
+          testimonials={testimonials}
+          onOpenVideo={openVideo}
+          onRegisterNavigator={registerNavigator}
+        />
       )}
+
+      {modalIndex !== null ? (
+        <TestimonialVideoModal
+          testimonials={testimonials}
+          activeIndex={modalIndex}
+          isClosing={isModalClosing}
+          returnFocusRef={openTriggerRef}
+          onClose={closeVideo}
+          onVideoEnded={handleVideoEnded}
+        />
+      ) : null}
     </>
   )
 }

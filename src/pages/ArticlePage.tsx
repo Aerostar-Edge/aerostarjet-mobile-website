@@ -25,7 +25,7 @@ export default function ArticlePage({ slug: slugProp }: ArticlePageProps) {
 
   return (
     <PageLayout>
-      <section className="space-y-4 bg-primary-alt px-4 py-8 text-surface">
+      <section className="stack-section-header bg-primary-alt px-4 py-8 text-surface">
         <p className="text-label text-accent">{post.date}</p>
         <h1 className="text-[1.75rem] font-bold leading-snug">{post.title}</h1>
       </section>

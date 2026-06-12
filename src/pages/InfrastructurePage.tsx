@@ -6,11 +6,11 @@ import { infrastructureCopy } from '../data/content'
 export default function InfrastructurePage() {
   return (
     <PageLayout>
-      <section className="space-y-1 bg-primary-alt px-4 py-8 text-surface">
+      <section className="stack-hero bg-primary-alt px-4 py-8 text-surface">
         <h1 className="text-[1.75rem] font-bold">{infrastructureCopy.pageHeading}</h1>
       </section>
 
-      <section className="space-y-4 px-4 py-10">
+      <section className="stack-copy px-4 py-10">
         {infrastructureCopy.paragraphs.map((paragraph) => (
           <p key={paragraph.slice(0, 40)} className="text-description leading-6 text-body">
             {paragraph}

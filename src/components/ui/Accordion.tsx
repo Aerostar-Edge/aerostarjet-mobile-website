@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useLayoutEffect, useRef, useState, type ReactNode, type TransitionEvent } from 'react'
 
 export type AccordionEntry = {
   id: string
@@ -12,6 +12,54 @@ type AccordionProps = {
   defaultOpenIndex?: number | null
 }
 
+type AccordionPanelProps = {
+  isOpen: boolean
+  children: ReactNode
+}
+
+function AccordionPanel({ isOpen, children }: AccordionPanelProps) {
+  const innerRef = useRef<HTMLDivElement>(null)
+  const skipInitialAnimation = useRef(true)
+  const [height, setHeight] = useState<number | 'auto'>(0)
+
+  useLayoutEffect(() => {
+    const node = innerRef.current
+    if (!node) return
+
+    if (skipInitialAnimation.current) {
+      skipInitialAnimation.current = false
+      setHeight(isOpen ? 'auto' : 0)
+      return
+    }
+
+    if (isOpen) {
+      const target = node.scrollHeight
+      setHeight(0)
+      const frame = requestAnimationFrame(() => setHeight(target))
+      return () => cancelAnimationFrame(frame)
+    }
+
+    setHeight(node.scrollHeight)
+    const frame = requestAnimationFrame(() => setHeight(0))
+    return () => cancelAnimationFrame(frame)
+  }, [isOpen])
+
+  const handleTransitionEnd = (event: TransitionEvent<HTMLDivElement>) => {
+    if (event.propertyName !== 'height' || !isOpen) return
+    setHeight('auto')
+  }
+
+  return (
+    <div
+      className="accordion-panel overflow-hidden transition-[height] duration-300 ease-in-out motion-reduce:transition-none"
+      style={{ height: height === 'auto' ? 'auto' : `${height}px` }}
+      onTransitionEnd={handleTransitionEnd}
+    >
+      <div ref={innerRef}>{children}</div>
+    </div>
+  )
+}
+
 export function AccordionChevron({ open }: { open: boolean }) {
   return (
     <svg
@@ -20,7 +68,7 @@ export function AccordionChevron({ open }: { open: boolean }) {
       viewBox="0 0 16 16"
       fill="none"
       aria-hidden
-      className={`shrink-0 text-navy transition-transform duration-200 ease-in-out motion-reduce:transition-none ${
+      className={`shrink-0 text-navy transition-transform duration-300 ease-in-out motion-reduce:transition-none ${
         open ? 'rotate-180' : 'rotate-0'
       }`}
     >
@@ -51,7 +99,7 @@ export default function Accordion({ entries, defaultOpenIndex = 0 }: AccordionPr
               type="button"
               aria-expanded={isOpen}
               onClick={() => setOpenIndex(isOpen ? null : index)}
-              className="flex min-h-12 w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors duration-200 hover:bg-[rgba(43,62,255,0.04)]"
+              className="flex min-h-12 w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors duration-200"
             >
               <span className="text-sm font-medium text-navy">{entry.title}</span>
               <span className="flex shrink-0 items-center gap-2">
@@ -64,13 +112,9 @@ export default function Accordion({ entries, defaultOpenIndex = 0 }: AccordionPr
               </span>
             </button>
 
-            <div
-              className={`overflow-hidden transition-[max-height] duration-300 ease-in-out motion-reduce:transition-none ${
-                isOpen ? 'max-h-[2000px]' : 'max-h-0'
-              }`}
-            >
+            <AccordionPanel isOpen={isOpen}>
               <div className="px-4 pt-4 pb-4">{entry.content}</div>
-            </div>
+            </AccordionPanel>
           </div>
         )
       })}

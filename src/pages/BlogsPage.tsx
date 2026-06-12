@@ -7,7 +7,7 @@ export default function BlogsPage() {
 
   return (
     <PageLayout>
-      <section className="space-y-2 bg-primary-alt px-4 py-8 text-surface">
+      <section className="stack-hero bg-primary-alt px-4 py-8 text-surface">
         <h1 className="text-[1.75rem] font-bold">{blogsCopy.heading}</h1>
         <p className="text-description text-white/85">{blogsCopy.subheading}</p>
       </section>

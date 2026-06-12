@@ -1,5 +1,6 @@
 import { Link, Navigate, useParams } from 'react-router-dom'
 import PageLayout from '../components/layout/PageLayout'
+import { EnrollCtaLink } from '../components/ui/EnrollCtaButton'
 import CtaBanner from '../components/sections/CtaBanner'
 import CurriculumAccordion from '../components/ui/CurriculumAccordion'
 import GroundSubjectsAccordion from '../components/ui/GroundSubjectsAccordion'
@@ -18,7 +19,7 @@ export default function CourseDetailPage() {
 
   return (
     <PageLayout>
-      <section className="space-y-4 bg-primary-alt px-4 py-8 text-surface">
+      <section className="stack-hero bg-primary-alt px-4 py-8 text-surface">
         <nav className="flex flex-wrap items-center gap-2 text-body-sm text-white/72">
           <Link to="/" className="hover:text-white">
             Home
@@ -37,10 +38,10 @@ export default function CourseDetailPage() {
         <p className="text-description text-white/85">{course.tagline}</p>
       </section>
 
-      <section className="space-y-6 px-4 py-8">
+      <section className="stack-section px-4 py-8">
         <img src={course.image} alt={course.title} className="h-52 w-full rounded-2xl object-cover" />
 
-        <div className="space-y-2 rounded-lg border border-border-alt bg-surface p-4 shadow-md">
+        <div className="stack-section-header-tight rounded-lg border border-border-alt bg-surface p-4 shadow-md">
           <h3 className="text-sm font-bold text-navy">Programme Details</h3>
           {[
             ...(course.code ? [['Course Code', course.code] as const] : []),
@@ -59,12 +60,11 @@ export default function CourseDetailPage() {
               </span>
             </div>
           ))}
-          <Link
-            to="/apply"
-            className="mt-1 flex min-h-10 w-full items-center justify-center rounded-full bg-accent-bright text-xs font-bold text-accent-dark"
-          >
-            Enroll Now &rarr;
-          </Link>
+          <div className="course-card__cta-wrap">
+            <EnrollCtaLink to="/apply">
+              Enroll Now &rarr;
+            </EnrollCtaLink>
+          </div>
         </div>
 
         <h2 className="text-heading-md font-bold text-navy">{course.tagline}</h2>

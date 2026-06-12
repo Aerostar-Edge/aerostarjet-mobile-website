@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import PageLayout from '../components/layout/PageLayout'
+import { EnrollCtaButton } from '../components/ui/EnrollCtaButton'
 import SectionLabel from '../components/ui/SectionLabel'
 import CtaBanner from '../components/sections/CtaBanner'
 import { assets } from '../data/assets'
@@ -8,7 +9,7 @@ import { branches, contactCopy } from '../data/content'
 export default function ContactPage() {
   return (
     <PageLayout>
-      <section className="space-y-1 bg-primary-alt px-4 py-8 text-surface">
+      <section className="stack-hero bg-primary-alt px-4 py-8 text-surface">
         <SectionLabel>{contactCopy.overline}</SectionLabel>
         <h1 className="text-[1.75rem] font-bold">
           {contactCopy.heading} <span className="text-accent">{contactCopy.headingAccent}</span>
@@ -17,8 +18,8 @@ export default function ContactPage() {
       </section>
 
       <div className="contact-page-grid">
-        <section className="contact-form-section space-y-6 bg-bg-grey px-4 py-10">
-          <div className="space-y-2 text-center">
+        <section className="contact-form-section stack-section bg-bg-grey px-4 py-10">
+          <div className="stack-section-header-tight text-center">
             <p className="text-overline font-semibold uppercase tracking-widest text-primary-alt">
               Admission Open
             </p>
@@ -30,7 +31,7 @@ export default function ContactPage() {
             </p>
           </div>
           <form
-            className="contact-form space-y-4 rounded-lg border border-border-alt bg-surface p-6 shadow-md"
+            className="contact-form stack-form rounded-lg border border-border-alt bg-surface p-6 shadow-md"
             onSubmit={(event) => event.preventDefault()}
           >
             {[
@@ -40,7 +41,7 @@ export default function ContactPage() {
               { label: 'City/Location', placeholder: 'Your city' },
               { label: 'Campus Preference', placeholder: 'Select campus' },
             ].map((field) => (
-              <label key={field.label} className="block space-y-2">
+              <label key={field.label} className="stack-field block">
                 <span className="text-xs font-semibold text-navy">{field.label}</span>
                 <input
                   type="text"
@@ -49,7 +50,7 @@ export default function ContactPage() {
                 />
               </label>
             ))}
-            <label className="block space-y-2">
+            <label className="stack-field block">
               <span className="text-xs font-semibold text-navy">Message</span>
               <textarea
                 rows={4}
@@ -57,12 +58,9 @@ export default function ContactPage() {
                 className="w-full rounded-lg border border-border-alt bg-bg-grey px-3 py-3 text-xs text-placeholder outline-none focus:border-primary"
               />
             </label>
-            <button
-              type="submit"
-              className="flex min-h-12 w-full items-center justify-center rounded-lg bg-accent-bright text-xs font-bold uppercase text-accent-dark"
-            >
+            <EnrollCtaButton type="submit">
               Submit Now
-            </button>
+            </EnrollCtaButton>
           </form>
           <p className="text-description text-center text-muted">
             Prefer a full application?{' '}
@@ -72,10 +70,12 @@ export default function ContactPage() {
           </p>
         </section>
 
-        <section className="contact-branches-section space-y-6 bg-bg-light px-4 py-10">
-          <SectionLabel>Our Branches</SectionLabel>
-          <h2 className="text-heading-lg font-extrabold text-navy-deep">Visit Any of Our 5 Branches</h2>
-          <div className="branch-cards space-y-4">
+        <section className="contact-branches-section stack-section bg-bg-light px-4 py-10">
+          <div className="stack-section-header">
+            <SectionLabel>Our Branches</SectionLabel>
+            <h2 className="text-heading-lg font-extrabold text-navy-deep">Visit Any of Our 5 Branches</h2>
+          </div>
+          <div className="branch-cards">
             {branches.map((branch) => (
               <div key={branch.city} className="branch-card rounded-2xl border border-border bg-surface p-6 shadow-md">
                 <div className="branch-card__content">
@@ -83,11 +83,11 @@ export default function ContactPage() {
                     <span className="branch-card__marker" aria-hidden="true" />
                     <h3 className="branch-card__name font-bold text-navy">{branch.city}</h3>
                   </div>
-                  <p className="branch-card__address text-description mt-1 text-muted">{branch.address}</p>
+                  <p className="branch-card__address text-description text-muted">{branch.address}</p>
                 </div>
                 <a
                   href={`tel:${branch.phone.replace(/\s/g, '')}`}
-                  className="branch-card__phone mt-2 flex min-h-12 items-center text-xs font-semibold text-primary"
+                  className="branch-card__phone flex min-h-12 items-center text-xs font-semibold text-primary"
                 >
                   {branch.phone}
                 </a>
@@ -96,14 +96,14 @@ export default function ContactPage() {
           </div>
         </section>
 
-        <section className="contact-info-section space-y-6 px-4 py-10">
+        <section className="contact-info-section stack-section px-4 py-10">
           <h2 className="text-heading-md font-bold text-navy">Contact</h2>
-          <div className="contact-info-card space-y-4 rounded-2xl border border-border bg-surface p-6 shadow-md">
+          <div className="contact-info-card stack-copy rounded-2xl border border-border bg-surface p-6 shadow-md">
             <div className="flex items-start gap-3">
               <img src={assets.iconPhone} alt="" className="mt-1 size-5" aria-hidden />
               <div>
                 <p className="text-xs font-semibold text-navy">Corporate Office</p>
-                <p className="text-description mt-1 text-muted">{contactCopy.corporateOffice}</p>
+                <p className="text-description text-muted">{contactCopy.corporateOffice}</p>
               </div>
             </div>
             {contactCopy.phones.map((phone) => (

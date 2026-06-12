@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
 
 export type FormSelectOption = {
   value: string
@@ -13,6 +13,25 @@ type FormSelectProps = {
   required?: boolean
 }
 
+const PANEL_GAP = 12
+const PANEL_MAX_HEIGHT = 220
+
+function getPanelMaxHeight(trigger: HTMLButtonElement) {
+  const rect = trigger.getBoundingClientRect()
+  let limitBottom = window.innerHeight - PANEL_GAP
+
+  const ctaBanner = document.querySelector('.cta-banner')
+  if (ctaBanner) {
+    const ctaRect = ctaBanner.getBoundingClientRect()
+    if (ctaRect.top > rect.bottom) {
+      limitBottom = Math.min(limitBottom, ctaRect.top - PANEL_GAP)
+    }
+  }
+
+  const spaceBelow = limitBottom - rect.bottom - 4
+  return Math.min(PANEL_MAX_HEIGHT, Math.max(48, spaceBelow))
+}
+
 export default function FormSelect({
   options,
   defaultValue = '',
@@ -22,15 +41,26 @@ export default function FormSelect({
 }: FormSelectProps) {
   const [open, setOpen] = useState(false)
   const [value, setValue] = useState(defaultValue)
+  const [panelMaxHeight, setPanelMaxHeight] = useState(PANEL_MAX_HEIGHT)
   const rootRef = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
   const listboxId = useId()
 
   const selectedOption = options.find((option) => option.value === value)
   const displayLabel = selectedOption?.label ?? placeholder ?? ''
   const isPlaceholder = !selectedOption && Boolean(placeholder)
 
+  const updatePanelLayout = useCallback(() => {
+    const trigger = triggerRef.current
+    if (!trigger) return
+
+    setPanelMaxHeight(getPanelMaxHeight(trigger))
+  }, [])
+
   useEffect(() => {
     if (!open) return
+
+    updatePanelLayout()
 
     const onPointerDown = (event: PointerEvent) => {
       if (!rootRef.current?.contains(event.target as Node)) {
@@ -44,14 +74,22 @@ export default function FormSelect({
       }
     }
 
+    const onLayoutChange = () => {
+      updatePanelLayout()
+    }
+
     document.addEventListener('pointerdown', onPointerDown)
     document.addEventListener('keydown', onKeyDown)
+    window.addEventListener('resize', onLayoutChange)
+    window.addEventListener('scroll', onLayoutChange, true)
 
     return () => {
       document.removeEventListener('pointerdown', onPointerDown)
       document.removeEventListener('keydown', onKeyDown)
+      window.removeEventListener('resize', onLayoutChange)
+      window.removeEventListener('scroll', onLayoutChange, true)
     }
-  }, [open])
+  }, [open, updatePanelLayout])
 
   const selectOption = (optionValue: string, isPlaceholderOption: boolean) => {
     if (isPlaceholderOption) return
@@ -62,19 +100,33 @@ export default function FormSelect({
   return (
     <div ref={rootRef} className={`form-select${open ? ' form-select--open' : ''}`}>
       <button
+        ref={triggerRef}
         type="button"
         className={`form-select__trigger${isPlaceholder ? ' form-select__trigger--placeholder' : ''}`}
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={listboxId}
-        onClick={() => setOpen((previous) => !previous)}
+        onClick={() => {
+          setOpen((previous) => {
+            const next = !previous
+            if (next) {
+              requestAnimationFrame(updatePanelLayout)
+            }
+            return next
+          })
+        }}
       >
         <span className="form-select__value">{displayLabel}</span>
         <span className="form-select__chevron" aria-hidden="true" />
       </button>
 
       {open ? (
-        <ul id={listboxId} className="form-select__panel" role="listbox">
+        <ul
+          id={listboxId}
+          className="form-select__panel"
+          role="listbox"
+          style={{ maxHeight: panelMaxHeight }}
+        >
           {placeholder ? (
             <li
               role="option"

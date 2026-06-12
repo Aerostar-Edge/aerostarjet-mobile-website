@@ -1,4 +1,5 @@
 export const PREVIEW_STORAGE_KEY = 'aerostar-preview'
+export const PREVIEW_DISMISSED_KEY = 'aerostar-preview-dismissed'
 
 export const PREVIEW_WIDTHS = {
   mobile: 375,
@@ -34,6 +35,22 @@ export function writePreviewStorage(state: PreviewStorageState) {
 
 export function clearPreviewStorage() {
   sessionStorage.removeItem(PREVIEW_STORAGE_KEY)
+}
+
+export function isPreviewDismissed() {
+  if (typeof window === 'undefined') return false
+  return sessionStorage.getItem(PREVIEW_DISMISSED_KEY) === 'true'
+}
+
+export function setPreviewDismissed(dismissed: boolean) {
+  if (typeof window === 'undefined') return
+
+  if (dismissed) {
+    sessionStorage.setItem(PREVIEW_DISMISSED_KEY, 'true')
+    return
+  }
+
+  sessionStorage.removeItem(PREVIEW_DISMISSED_KEY)
 }
 
 export function appendPreviewParams(path: string, width: number) {

@@ -1,8 +1,28 @@
-import { assets } from './assets'
+﻿import { assets } from './assets'
+import { blogPosts } from './blogs'
 
 export type NavLink = { label: string; href: string }
 
 export type CourseCategory = 'aviation' | 'fashion-interior' | 'hospitality' | 'tours'
+
+export const COURSE_CATEGORY_PARAM = 'category'
+
+export function getCoursesCategoryHref(category: CourseCategory): string {
+  return `/courses?${COURSE_CATEGORY_PARAM}=${category}`
+}
+
+export function parseCoursesCategoryParam(value: string | null): CourseCategory | 'all' {
+  if (
+    value === 'aviation' ||
+    value === 'hospitality' ||
+    value === 'tours' ||
+    value === 'fashion-interior'
+  ) {
+    return value
+  }
+
+  return 'all'
+}
 
 export type Course = {
   id: string
@@ -33,11 +53,14 @@ export type Testimonial = {
   role: string
   quote: string
   initial: string
+  videoUrl: string
 }
 
 export type PlacementStory = {
   name: string
   role: string
+  image?: string
+  imageAlt?: string
 }
 
 export type FaqItem = { question: string; answer: string }
@@ -48,28 +71,35 @@ export const site = {
   name: 'Aerostar Aviation Academy',
   phone: '+91 63579-83061',
   email: 'inquiry@aerostarjet.in',
-  heroBadge: "GUJARAT'S NO.1 AIR HOSTESS & AIRPORT MANAGEMENT TRAINING INSTITUTE",
-  heroLine1: "It's Time To Give",
-  heroLine2: 'Your Dreams',
-  heroLine2Accent: 'Wings',
-  heroHashtag: '#FlyHighWithAerostar',
-  heroDescription:
-    'Aerostar Aviation Academy is an approved training partner of National Skill Development Corporation (NSDC), Skill India and Aerospace Sector Skill Council (ASSC).',
+  heroBadge: "GUJARAT'S NO.1 AVIATION TRAINING INSTITUTE",
+  heroHeadline: '20,000+\u00A0Students Placed at Top Airports &\u00A0Airlines',
+  heroSubheadline:
+    'From Ahmedabad to international airports — Aerostar graduates are working at IndiGo, Air India, Spice Jet, TAJ, Marriott and more. Your career starts here.',
 } as const
 
 export const navLinks: NavLink[] = [
   { label: 'Home', href: '/' },
   { label: 'Courses', href: '/courses' },
   { label: 'Placements', href: '/placements' },
-  { label: 'Franchise', href: '/franchise' },
+  { label: 'Our Centres', href: '/franchise' },
   { label: 'About Us', href: '/about' },
   { label: 'Blogs', href: '/blogs' },
 ]
 
 export const heroStats = [
   { value: '18+', label: 'Years of Excellence' },
-  { value: '20,000+', label: 'Students Placed' },
   { value: '2,500+', label: 'Hiring Partners' },
+] as const
+
+export const heroPartnerLogoSlots = [
+  { id: 'partner-adani-airports', alt: 'Adani Airports', src: assets.hiringPartnerAdaniAirports, scale: 0.68 },
+  { id: 'partner-air-india', alt: 'Air India', src: assets.hiringPartnerAirIndia, scale: 1.05 },
+  { id: 'partner-indigo', alt: 'IndiGo', src: assets.hiringPartnerIndigo, scale: 0.73 },
+  { id: 'partner-spicejet', alt: 'SpiceJet', src: assets.hiringPartnerSpicejet, scale: 1.0 },
+  { id: 'partner-taj', alt: 'Taj Hotels', src: assets.hiringPartnerTaj, scale: 1.0 },
+  { id: 'partner-marriott', alt: 'Marriott', src: assets.hiringPartnerMarriott, scale: 0.94 },
+  { id: 'partner-itc-hotels', alt: 'ITC Hotels', src: assets.hiringPartnerItcHotels, scale: 1.06 },
+  { id: 'partner-radisson', alt: 'Radisson Hotels and Resorts', src: assets.hiringPartnerRadisson, scale: 0.9 },
 ] as const
 
 export const contactCopy = {
@@ -93,7 +123,7 @@ export const aboutCopy = {
   overline: 'ABOUT AEROSTAR',
   title: 'Aerostar Aviation Academy',
   heading: 'Vocational Training in the fields of',
-  headingAccent: 'Aviation, Hospitality and Tours & Travel.',
+  headingAccent: 'Aviation, Hospitality and Tours &\u00A0Travel.',
   paragraphs: [
     'Aerostar is a training institute that helps and trains students to build a career in aviation and hospitality. Holistic personality development and communication skills development are mostly complimentary to our courses.',
     'With exceptional quality academic programs for air hostesses, hospitality courses, cabin crew courses, and travel & tourism courses, we have the highest placement records at airlines, airports, and the hotel industry across the globe.',
@@ -103,32 +133,62 @@ export const aboutCopy = {
 
 export const recognitionsCopy = {
   overline: "Aerostar's Recognitions",
-  heading: 'Nationally Recognised & Trustworthy Organization',
+  heading: 'Nationally Recognised & Trustworthy\u00A0Organization',
+  logos: [
+    {
+      src: assets.recognitionAassc,
+      alt: 'Aerospace & Aviation Sector Skill Council logo',
+    },
+    {
+      src: assets.recognitionMsde,
+      alt: 'Government of India Ministry of Skill Development and Entrepreneurship logo',
+    },
+    {
+      src: assets.recognitionSkillIndia,
+      alt: 'Skill India logo',
+    },
+    {
+      src: assets.recognitionNsdc,
+      alt: 'National Skill Development Corporation logo',
+    },
+  ],
 } as const
 
 export const homepageCoursesCopy = {
   overline: 'Courses',
-  heading: 'Find The Best Course For You',
+  heading: 'Find The Best Course For\u00A0You',
   categories: [
     {
       label: 'Aviation',
+      categoryId: 'aviation',
       description: 'Aviation Courses — Find The Best Aviation Course For You',
-      href: '/courses',
+      href: getCoursesCategoryHref('aviation'),
+      image: assets.courseCategoryAviation,
+      imageAlt: 'Aviation training at Aerostar',
     },
     {
       label: 'Hospitality',
+      categoryId: 'hospitality',
       description: 'Hospitality Courses — Find The Best Hospitality Course For You',
-      href: '/courses',
+      href: getCoursesCategoryHref('hospitality'),
+      image: assets.courseCategoryHospitality,
+      imageAlt: 'Hospitality training at Aerostar',
     },
     {
       label: 'Tours & Travelling',
+      categoryId: 'tours',
       description: 'Tours & Travelling Courses — Find The Best Tours & Travel Course',
-      href: '/courses',
+      href: getCoursesCategoryHref('tours'),
+      image: assets.courseCategoryToursTravelling,
+      imageAlt: 'Tours and travel training at Aerostar',
     },
     {
       label: 'Fashion & Interior Designing',
+      categoryId: 'fashion-interior',
       description: 'Fashion & Interior Designing Courses — Find The Best Design Course',
-      href: '/courses',
+      href: getCoursesCategoryHref('fashion-interior'),
+      image: assets.courseCategoryFashionInterior,
+      imageAlt: 'Fashion and interior design training at Aerostar',
     },
   ],
 } as const
@@ -214,7 +274,7 @@ export const courses: Course[] = [
   {
     id: 'attm',
     code: 'ATTM',
-    title: 'Aviation, Tours & Travel Management',
+    title: 'Aviation, Tours &\u00A0Travel Management',
     badge: 'Aviation',
     description:
       'Covers airline operations, ticketing, tourism management and customer service with industry-led training modules.',
@@ -407,6 +467,7 @@ export const testimonials: Testimonial[] = [
     name: 'Stuti Upadhyay',
     role: 'Ahmedabad International Airport',
     initial: 'S',
+    videoUrl: '/assets/testimonials/stuti-upadhyay.mp4',
   },
   {
     quote:
@@ -414,6 +475,7 @@ export const testimonials: Testimonial[] = [
     name: 'Mausin Sharfi',
     role: 'Spice Jet',
     initial: 'M',
+    videoUrl: '/assets/testimonials/mausin-sharfi.mp4',
   },
   {
     quote:
@@ -421,16 +483,47 @@ export const testimonials: Testimonial[] = [
     name: 'Ashok Sen',
     role: 'Ahmedabad International Airport',
     initial: 'A',
+    videoUrl: '/assets/testimonials/ashok-sen.mp4',
   },
 ]
 
 export const placements: PlacementStory[] = [
-  { name: 'Mili Kandachiya', role: 'Ahmedabad International Airport' },
-  { name: 'Mausin Sharfi', role: 'Spice Jet' },
-  { name: 'Stuti Upadhyay', role: 'Ahmedabad International Airport' },
-  { name: 'Ashok Sen', role: 'Ahmedabad International Airport' },
-  { name: 'Hussain Sabuwala', role: 'Indigo' },
-  { name: 'Sameer Rana', role: 'Ahmedabad International Airport' },
+  {
+    name: 'Mili Kandachiya',
+    role: 'Ahmedabad International Airport',
+    image: assets.placementMiliKandachiya,
+    imageAlt: 'Mili Kandachiya placed at Ahmedabad International Airport',
+  },
+  {
+    name: 'Mausin Sharfi',
+    role: 'Spice Jet',
+    image: assets.placementMausinSharfi,
+    imageAlt: 'Mausin Sharfi placed at Spice Jet',
+  },
+  {
+    name: 'Stuti Upadhyay',
+    role: 'Ahmedabad International Airport',
+    image: assets.placementStutiUpadhyay,
+    imageAlt: 'Stuti Upadhyay placed at Ahmedabad International Airport',
+  },
+  {
+    name: 'Ashok Sen',
+    role: 'Ahmedabad International Airport',
+    image: assets.placementAshokSen,
+    imageAlt: 'Ashok Sen placed at Ahmedabad International Airport',
+  },
+  {
+    name: 'Hussain Sabuwala',
+    role: 'Indigo',
+    image: assets.placementHussainSabuwala,
+    imageAlt: 'Hussain Sabuwala placed at Indigo',
+  },
+  {
+    name: 'Sameer Rana',
+    role: 'Ahmedabad International Airport',
+    image: assets.placementSameerRana,
+    imageAlt: 'Sameer Rana placed at Ahmedabad International Airport',
+  },
 ]
 
 export const faqs: FaqItem[] = [
@@ -498,7 +591,7 @@ export const branches: Branch[] = [
 
 export const franchiseCopy = {
   hero: {
-    title: 'Franchise',
+    title: 'Our Centres',
     subCopy:
       'Aerostar Aviation Academy, as the Franchisor, offers expertise and know-how in its area of operation. Aerostar has a proven track record and has achieved a reputation for being a successful business model.',
     cta: 'Enquire Now',
@@ -540,7 +633,8 @@ export const franchiseCopy = {
     'Uttar Pradesh',
     'West Bengal',
   ],
-  formIntro: 'Fill in the details below to register your interest in an Aerostar franchise.',
+  formIntro: 'Fill in the details below to download the partner association brochure.',
+  brochureUrl: '/partner-association-brochure.pdf',
   branches: [
     {
       name: 'Maninagar, Ahmedabad',
@@ -579,6 +673,23 @@ export function getCourseById(id: string): Course | undefined {
 export function getCourseCountByCategory(category: 'all' | CourseCategory): number {
   if (category === 'all') return courses.length
   return courses.filter((course) => course.categories.includes(category)).length
+}
+
+const blogSlugs = new Set(blogPosts.map((post) => post.slug))
+
+export function isNavLinkActive(href: string, pathname: string): boolean {
+  if (href === '/') {
+    return pathname === '/'
+  }
+
+  if (href === '/blogs') {
+    if (pathname === '/blogs') return true
+
+    const slug = pathname.startsWith('/') ? pathname.slice(1) : pathname
+    return blogSlugs.has(slug)
+  }
+
+  return pathname === href || pathname.startsWith(href + '/')
 }
 
 export { blogPosts, getBlogBySlug, getBlogListingPosts } from './blogs'

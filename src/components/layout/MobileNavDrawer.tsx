@@ -1,7 +1,9 @@
+import { useLocation } from 'react-router-dom'
 import usePreviewNavigate from '../../hooks/usePreviewNavigate'
 import { CloseIcon } from '../ui/NavIcons'
-import { navLinks } from '../../data/content'
+import { navLinks, isNavLinkActive } from '../../data/content'
 import PreviewLink from './PreviewLink'
+import { EnrollCtaLink } from '../ui/EnrollCtaButton'
 
 type MobileNavDrawerProps = {
   open: boolean
@@ -9,6 +11,7 @@ type MobileNavDrawerProps = {
 }
 
 export default function MobileNavDrawer({ open, onClose }: MobileNavDrawerProps) {
+  const { pathname } = useLocation()
   const previewNavigate = usePreviewNavigate()
 
   if (!open) return null
@@ -18,6 +21,9 @@ export default function MobileNavDrawer({ open, onClose }: MobileNavDrawerProps)
     previewNavigate('/')
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
+
+  const getDrawerLinkClassName = (href: string) =>
+    `mobile-nav-drawer__link${isNavLinkActive(href, pathname) ? ' mobile-nav-drawer__link--active' : ''}`
 
   return (
     <>
@@ -40,6 +46,8 @@ export default function MobileNavDrawer({ open, onClose }: MobileNavDrawerProps)
         </div>
         <div className="flex flex-1 flex-col py-2">
           {navLinks.map((link) => {
+            const isActive = isNavLinkActive(link.href, pathname)
+
             if (link.href === '/') {
               return (
                 <PreviewLink
@@ -49,7 +57,8 @@ export default function MobileNavDrawer({ open, onClose }: MobileNavDrawerProps)
                     event.preventDefault()
                     goHome()
                   }}
-                  className="flex min-h-12 items-center px-6 text-body font-medium text-navy hover:bg-bg-light"
+                  className={getDrawerLinkClassName(link.href)}
+                  aria-current={isActive ? 'page' : undefined}
                 >
                   {link.label}
                 </PreviewLink>
@@ -61,7 +70,8 @@ export default function MobileNavDrawer({ open, onClose }: MobileNavDrawerProps)
                 key={link.label}
                 to={link.href}
                 onClick={onClose}
-                className="flex min-h-12 items-center px-6 text-body font-medium text-navy hover:bg-bg-light"
+                className={getDrawerLinkClassName(link.href)}
+                aria-current={isActive ? 'page' : undefined}
               >
                 {link.label}
               </PreviewLink>
@@ -69,13 +79,9 @@ export default function MobileNavDrawer({ open, onClose }: MobileNavDrawerProps)
           })}
         </div>
         <div className="p-4">
-          <PreviewLink
-            to="/apply"
-            onClick={onClose}
-            className="flex w-full items-center justify-center whitespace-nowrap rounded-full bg-accent-bright px-4 py-2 text-xs font-extrabold uppercase leading-none tracking-wide text-accent-dark"
-          >
+          <EnrollCtaLink to="/apply" onClick={onClose}>
             Enroll Now
-          </PreviewLink>
+          </EnrollCtaLink>
         </div>
       </nav>
     </>

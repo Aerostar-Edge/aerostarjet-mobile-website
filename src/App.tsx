@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import PreviewShell from './components/layout/PreviewShell'
 import ScrollToTop from './components/layout/ScrollToTop'
+import { ModalProvider } from './context/ModalProvider'
 import HomePage from './pages/HomePage'
 import CoursesPage from './pages/CoursesPage'
 import CourseDetailPage from './pages/CourseDetailPage'
@@ -12,14 +13,16 @@ import ApplyPage from './pages/ApplyPage'
 import BlogsPage from './pages/BlogsPage'
 import InfrastructurePage from './pages/InfrastructurePage'
 import ArticlePage from './pages/ArticlePage'
+import PrivacyPolicyPage from './pages/PrivacyPolicyPage'
 import { blogPosts } from './data/blogs'
 
 export default function App() {
   return (
     <BrowserRouter>
-      <PreviewShell>
-        <ScrollToTop />
-        <Routes>
+      <ModalProvider>
+        <PreviewShell>
+          <ScrollToTop />
+          <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/courses" element={<CoursesPage />} />
         <Route path="/courses/:courseId" element={<CourseDetailPage />} />
@@ -31,12 +34,14 @@ export default function App() {
         <Route path="/apply" element={<ApplyPage />} />
         <Route path="/infrastructure" element={<InfrastructurePage />} />
         <Route path="/blogs" element={<BlogsPage />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
         <Route path="/article/:id" element={<Navigate to="/blogs" replace />} />
         {blogPosts.map((post) => (
           <Route key={post.slug} path={post.slug} element={<ArticlePage slug={post.slug} />} />
         ))}
-        </Routes>
-      </PreviewShell>
+          </Routes>
+        </PreviewShell>
+      </ModalProvider>
     </BrowserRouter>
   )
 }

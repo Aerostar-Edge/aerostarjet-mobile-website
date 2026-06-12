@@ -15,18 +15,18 @@ import {
 export default function AboutPage() {
   return (
     <PageLayout>
-      <section className="space-y-1 bg-primary-alt px-4 py-8 text-surface">
+      <section className="stack-hero bg-primary-alt px-4 py-8 text-surface">
         <h1 className="text-[1.75rem] font-bold">About Us</h1>
         <p className="text-description text-white/85">Training for Excellence in Air and Hospitality Service</p>
       </section>
 
-      <section className="space-y-6 px-4 py-10">
+      <section className="stack-section px-4 py-10">
         <div className="about-content-layout">
           <div className="about-content-layout__media">
             <img src={assets.aboutImage} alt="" className="about-preview-layout__image rounded-2xl" />
           </div>
-          <div className="about-content-layout__copy space-y-4">
-            <div className="space-y-2">
+          <div className="about-content-layout__copy stack-copy">
+            <div className="stack-section-header">
               <SectionLabel>{aboutCopy.overline}</SectionLabel>
               <p className="text-sm font-bold text-navy-deep">{aboutCopy.title}</p>
               <h2 className="text-heading-lg font-extrabold text-navy-deep">
@@ -42,15 +42,15 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section className="mobile-listing-section space-y-6 bg-bg-light py-8">
-        <div className="mobile-listing-section__intro space-y-2 text-center">
-          <SectionLabel className="mt-2 justify-center">{homepageNewsCopy.overline}</SectionLabel>
+      <section className="mobile-listing-section stack-section bg-bg-light py-8">
+        <div className="mobile-listing-section__intro stack-section-header-tight text-center">
+          <SectionLabel className="justify-center">{homepageNewsCopy.overline}</SectionLabel>
           <h2 className="text-heading-lg font-extrabold tracking-tight text-navy-deep">
             {homepageNewsCopy.heading}
           </h2>
         </div>
-        <div className="blog-cards-grid">
-          {blogPosts.slice(0, 2).map((post, index) => (
+        <div className="blog-cards-grid about-news-cards">
+          {blogPosts.slice(0, 3).map((post, index) => (
             <BlogCard key={post.slug} post={post} index={index} />
           ))}
         </div>
@@ -64,30 +64,30 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section className="space-y-6 bg-bg-grey px-4 py-10">
-        <div className="space-y-2 text-center">
-          <SectionLabel className="justify-center">{contactCopy.overline}</SectionLabel>
-          <h2 className="text-heading-lg font-bold text-navy">
+      <section className="stack-section bg-primary-alt px-4 py-10 text-surface">
+        <div className="stack-section-header-tight text-center">
+          <SectionLabel className="justify-center [&_.text-label]:text-surface">{contactCopy.overline}</SectionLabel>
+          <h2 className="text-heading-lg font-bold">
             {contactCopy.heading}{' '}
-            <span className="text-primary-alt">{contactCopy.headingAccent}</span>
+            <span className="text-accent">{contactCopy.headingAccent}</span>
           </h2>
         </div>
-        <div className="space-y-4 rounded-2xl border border-border bg-surface p-5 shadow-md">
-          <div>
+        <div className="stack-copy rounded-2xl border border-border bg-surface p-5 shadow-md">
+          <div className="contact-field">
             <p className="text-xs font-bold uppercase tracking-wide text-primary-alt">Corporate Office</p>
-            <p className="mt-1 text-description text-body">{contactCopy.corporateOffice}</p>
+            <p className="text-description text-body">{contactCopy.corporateOffice}</p>
           </div>
-          <div>
+          <div className="contact-field">
             <p className="text-xs font-bold uppercase tracking-wide text-primary-alt">Mobile</p>
-            <p className="mt-1 text-description text-body">{contactCopy.phones.join(' | ')}</p>
+            <p className="text-description text-body">{contactCopy.phones.join(' | ')}</p>
           </div>
-          <div>
+          <div className="contact-field">
             <p className="text-xs font-bold uppercase tracking-wide text-primary-alt">Email</p>
-            <p className="mt-1 text-description text-body">{contactCopy.email}</p>
+            <p className="text-description text-body">{contactCopy.email}</p>
           </div>
-          <div>
+          <div className="contact-field">
             <p className="text-xs font-bold uppercase tracking-wide text-primary-alt">Social</p>
-            <p className="mt-1 text-description text-body">
+            <p className="text-description text-body">
               Facebook: {contactCopy.social.facebook} | Instagram: {contactCopy.social.instagram} | YouTube{' '}
               {contactCopy.social.youtube}
             </p>
@@ -95,7 +95,7 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section className="mobile-listing-section space-y-4 py-8">
+      <section className="mobile-listing-section stack-section py-8">
         <h3 className="mobile-listing-section__intro pt-10 pb-0 text-sm font-bold text-navy">Branch Locations</h3>
         <div className="branch-cards">
         {branches.map((branch) => (
@@ -105,11 +105,11 @@ export default function AboutPage() {
                 <span className="branch-card__marker" aria-hidden="true" />
                 <h4 className="branch-card__name font-bold text-navy">{branch.city}</h4>
               </div>
-              <p className="branch-card__address mt-1 text-description text-body">{branch.address}</p>
+              <p className="branch-card__address text-description text-body">{branch.address}</p>
             </div>
             <a
               href={`tel:${branch.phone.replace(/\s/g, '')}`}
-              className="branch-card__phone mt-2 flex min-h-12 items-center text-xs font-semibold text-primary-alt"
+              className="branch-card__phone flex min-h-12 items-center text-xs font-semibold text-primary-alt"
             >
               {branch.phone}
             </a>
