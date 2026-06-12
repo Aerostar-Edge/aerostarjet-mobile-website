@@ -10187,3 +10187,105 @@ html[data-preview='true'][data-preview-width='1200'] .why-choose-marquee-card .w
     transform: none;
   }
 }
+
+/* ==========================================================================
+   Card hover lift — prevent overflow clipping (append zone)
+   ========================================================================== */
+:root {
+  --card-hover-lift-room: 8px;
+}
+
+/* A) Sections — horizontal bleed control, vertical lift visible */
+main > section,
+.why-choose-section,
+main > section:has(.placements-marquee-wrap),
+main > section:has(.alumni-marquee-wrap) {
+  overflow-x: clip;
+  overflow-y: visible;
+}
+
+html[data-preview='true'][data-preview-width='375'] main > section,
+html[data-preview='true'][data-preview-width='768'] main > section,
+html[data-preview='true'][data-preview-width='1200'] main > section,
+html[data-preview='true'][data-preview-width='375'] .why-choose-section,
+html[data-preview='true'][data-preview-width='768'] .why-choose-section,
+html[data-preview='true'][data-preview-width='1200'] .why-choose-section {
+  overflow-x: clip;
+  overflow-y: visible;
+}
+
+/* B) Card container breathing room for lift + scale */
+.why-choose-carousel-wrap,
+.why-choose-carousel__slide,
+.courses-grid,
+.blog-cards-grid,
+.branch-cards,
+.recognitions-grid,
+.course-categories-grid,
+.feature-cards-grid,
+.programmes-carousel,
+.why-choose-marquee-track .scroll-row,
+.placements-marquee-track .scroll-row,
+.alumni-marquee-track {
+  padding-block: var(--card-hover-lift-room);
+}
+
+/* C) Marquee / carousel — horizontal mask/scroll, no vertical clip */
+.why-choose-marquee-wrap,
+.placements-marquee-wrap,
+.why-choose-marquee-track,
+.placements-marquee-track,
+.alumni-marquee-wrap {
+  overflow-x: clip;
+  overflow-y: visible;
+}
+
+.why-choose-carousel {
+  overflow-x: hidden;
+  overflow-y: visible;
+}
+
+.why-choose-section .why-choose-carousel-wrap > .overflow-x-hidden {
+  overflow-x: hidden;
+  overflow-y: visible;
+}
+
+.programmes-carousel {
+  overflow-y: visible;
+}
+
+html[data-preview='true'][data-preview-width='375'] .why-choose-marquee-wrap,
+html[data-preview='true'][data-preview-width='768'] .why-choose-marquee-wrap,
+html[data-preview='true'][data-preview-width='1200'] .why-choose-marquee-wrap,
+html[data-preview='true'][data-preview-width='768'] .why-choose-marquee-track,
+html[data-preview='true'][data-preview-width='1200'] .why-choose-marquee-track,
+html[data-preview='true'][data-preview-width='768'] .placements-marquee-wrap,
+html[data-preview='true'][data-preview-width='1200'] .placements-marquee-wrap,
+html[data-preview='true'][data-preview-width='768'] .placements-marquee-track,
+html[data-preview='true'][data-preview-width='1200'] .placements-marquee-track {
+  overflow-x: clip;
+  overflow-y: visible;
+}
+
+/* D) Card roots — visible for hover transform; media stays clipped */
+.course-card,
+.blog-card-link,
+.branch-card,
+.recognitions-card,
+.why-choose-card,
+.why-choose-marquee-card,
+.course-category-card,
+.programme-card,
+.placement-card,
+.alumni-placement-card,
+.testimonial-card--interactive {
+  overflow: visible !important;
+}
+
+.course-card__media,
+.blog-card__media,
+.placement-card__media,
+.programme-card__media,
+.course-category-card__media {
+  overflow: hidden;
+}
