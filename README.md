@@ -40,3 +40,4 @@ Ask the agent to **commit and push** when you want the latest version on GitHub.
 - `src/data/content.ts` — copy, navigation, courses, FAQs
 - `public/assets/` — images and icons
 - `src/index.css` — Tailwind theme tokens and utilities (including `.text-description` at 12px)
+"# Aerostar-jet" 
